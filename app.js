@@ -30,6 +30,13 @@ const QS = CH.flatMap(ch => ch.questions.map((q, i) =>
   ({ ...q, id: `${ch.id}-${i + 1}`, n: i + 1, c: ch.id, a: typeof q.a === "string" ? LETTER.indexOf(q.a) : q.a })));
 const QBY = Object.fromEntries(QS.map(q => [q.id, q]));
 const chapterOf = id => CH.find(c => c.id === id);
+// Every chapter of the syllabus (mcq/chapters.js), in order, whether or not its questions are in yet.
+// A chapter file missing from that list still counts.
+const allChapters = () => {
+  const list = (window.ICT_CHAPTERS || []).slice();
+  CH.forEach(ch => { if (!list.some(c => c.id === ch.id)) list.push(ch); });
+  return list.sort((x, y) => x.no - y.no);
+};
 const inExam = q => !q.noExam;                     // a question with two correct options is read, not tested
 /* A digital signal drawn as a square wave, one step per bit (1 = high), for questions that ask to read one. */
 const wave = bits => {
@@ -78,10 +85,10 @@ document.addEventListener("keydown", e => {
 }, true);
 
 let toastTimer = 0;
-function toast(msg) {
+function toast(msg, ms = 2800) {
   const t = $("#toast");
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2800);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), ms);
 }
 
 /* C code colouring: keywords, strings, comments, preprocessor lines. */
@@ -99,16 +106,57 @@ function highlight(code) {
 
 
 /* ================= HOME ================= */
+/* Motivational lines (quotes.js) above সূচিপত্র, one at a time. All of them sit in the same spot, so the page below
+   never jumps; the one on screen fades out upwards and the next fades in from below, every 7 seconds. Tapping or
+   clicking the quote shows the next one at once (and the 7 seconds start again). Pointing at it, focusing it or leaving
+   the tab pauses the turning; with reduced motion it only changes when tapped. There is no counter or row of dots,
+   so the list in quotes.js can grow as long as you like. */
+let quoteTimer = 0;
+function renderQuotes() {
+  clearInterval(quoteTimer);
+  const box = $("#quotes"), list = (window.ICT_QUOTES || []).filter(Boolean);
+  if (!box || !list.length) return;
+  let cur = Math.floor(Math.random() * list.length), held = false;
+  const items = list.map((q, i) => `<span class="q-item${i === cur ? " on" : ""}"${i === cur ? "" : ' aria-hidden="true"'}>${esc(q)}</span>`).join("");
+  box.innerHTML = `<span class="q-mark" aria-hidden="true">“</span>` + (list.length > 1
+    ? `<button type="button" class="q-stage" title="চাপলে পরের প্রেরণা">${items}</button>`
+    : `<p class="q-stage">${items}</p>`);
+  box.hidden = false;
+  const els = $$(".q-item", box), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const show = i => {
+    const old = els[cur];
+    old.classList.remove("on"); old.classList.add("out"); old.setAttribute("aria-hidden", "true");
+    setTimeout(() => old.classList.remove("out"), 700);
+    cur = i;
+    els[cur].classList.remove("out"); els[cur].classList.add("on"); els[cur].removeAttribute("aria-hidden");
+  };
+  const start = () => {
+    clearInterval(quoteTimer);
+    if (still) return;
+    quoteTimer = setInterval(() => {
+      if (!box.isConnected) return clearInterval(quoteTimer);   // the reader has left the home page
+      if (!held && !document.hidden) show((cur + 1) % list.length);
+    }, 7000);
+  };
+  if (list.length < 2) return;
+  $(".q-stage", box).onclick = () => { show((cur + 1) % list.length); start(); };
+  // Pause only for a mouse resting on it or keyboard focus on it; a tap or a click doesn't freeze it.
+  box.onpointerenter = e => { if (e.pointerType === "mouse") held = true; };
+  box.onpointerleave = e => { if (e.pointerType === "mouse") held = false; };
+  box.addEventListener("focusin", e => { if (e.target.matches(":focus-visible")) held = true; });
+  box.addEventListener("focusout", () => (held = false));
+  start();
+}
+
 function home() {
   mount("t-home");
   document.title = "ICT মাস্টার · শিক্ষক নিবন্ধন প্রস্তুতি";
+  renderQuotes();
 
   // Every chapter of the syllabus, in order (mcq/chapters.js). An added chapter links to its MCQs, with its
   // question count and a dot for how much of it has come up in exams; the rest show "শিগগির".
   const stats = getStats();
-  const list = (window.ICT_CHAPTERS || []).slice();
-  CH.forEach(ch => { if (!list.some(c => c.id === ch.id)) list.push(ch); });   // a chapter file missing from the list still shows
-  list.sort((x, y) => x.no - y.no);
+  const list = allChapters();
   const left = list.length - list.filter(c => chapterOf(c.id)).length;
   $("#tocLede").textContent = `শিক্ষক নিবন্ধন, সহকারী শিক্ষক (আইসিটি), বিষয় কোড ৩১৩-এর সিলেবাস ধরে ${bn(list.length)}টি অধ্যায়। ` +
     (CH.length ? `এখন পর্যন্ত ${bn(CH.length)}টি অধ্যায়ে মোট ${bn(QS.length)}টি প্রশ্ন, উত্তর ও ব্যাখ্যাসহ${left ? `; বাকি ${bn(left)}টি একে একে যোগ হবে` : ""}।` : "প্রশ্ন একে একে যোগ হবে।");
@@ -147,7 +195,8 @@ function home() {
 const NOTES = {
   "computer-basics": { tpl: "t-note-ch01", ch: "ch01" },
   "number-system": { tpl: "t-note", ch: "ch02" },
-  "data-representation": { tpl: "t-note-ch03", ch: "ch03" }
+  "data-representation": { tpl: "t-note-ch03", ch: "ch03" },
+  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" }
 };
 
 function note(id, section) {
@@ -163,6 +212,7 @@ function note(id, section) {
   $$("[data-hl]").forEach(el => (el.innerHTML = highlight(el.textContent)));
   if ($("#noteMcq")) $("#noteMcq").textContent = bn(QS.filter(q => q.c === n.ch).length);
   renderPrev(n.ch);
+  if ($("#conv-form")) setupConverter();
 
   // "এই অংশের MCQ অনুশীলন": a timed exam on just the questions a section lists (data-practice="1,31-40").
   const practiceIds = b => b.dataset.practice.split(",")
@@ -181,6 +231,21 @@ function note(id, section) {
     const a = e.target.closest(`a[href^="#/note/${key}/"]`);
     if (a && !a.closest("#secnav") && scrollToLink(a)) e.preventDefault();
   });
+
+  // At the end: the chapters before and after this one. A chapter whose note isn't written yet opens its MCQs;
+  // one with neither shows "শিগগির" and isn't a link.
+  const chs = allChapters(), at = chs.findIndex(c => c.id === n.ch);
+  const noteOf = id => Object.keys(NOTES).find(k => NOTES[k].ch === id);
+  const side = (c, next) => {
+    if (!c) return "";
+    const k = noteOf(c.id), href = k ? `#/note/${k}` : chapterOf(c.id) ? `#/mcq/${c.id}` : "";
+    const inner = `<small>${next ? "পরের অধ্যায় →" : "← আগের অধ্যায়"}</small><b>${bn(c.no)}. ${esc(c.name)}</b>` +
+      `<span>${k ? "নোট" : href ? "MCQ · নোট শিগগির" : "শিগগির"}</span>`;
+    const cls = `chp${next ? " nx" : ""}`;
+    return href ? `<a class="${cls}" href="${href}">${inner}</a>` : `<span class="${cls} soon">${inner}</span>`;
+  };
+  if (at >= 0) $(".note .doc").insertAdjacentHTML("beforeend", `<nav class="blk chnav" aria-label="অধ্যায় বদলান">
+    <p class="blk-no">অধ্যায়</p><div class="body chpager">${side(chs[at - 1], false)}${side(chs[at + 1], true)}</div></nav>`);
   setupSectionBar();
   if (section && document.getElementById(section)) scrollOnOpen(section);
 }
@@ -225,10 +290,29 @@ function renderPrev(chId) {
     <thead><tr><th scope="col">অংশ</th><th scope="col" class="n">মোট</th>${P.exams.map(ex => `<th scope="col"><b>${bn(ex.no)}</b><small>${bn(String(ex.year).slice(2))}</small></th>`).join("")}</tr></thead>
     <tbody>${counted.map(r => `<tr><th scope="row"><a href="#/note/${Object.keys(NOTES).find(k => NOTES[k].ch === chId)}/${r.sec}">${esc(r.name)}</a></th>` +
       `<td class="n">${bn(r.n)}<small>/${bn(P.exams.length)}</small></td>` +
-      P.exams.map(ex => { const h = hits(r.id, ex.no); return `<td>${h.length ? `<i class="bub on" title="${esc(tag(ex.no))}: ${esc(h.map(x => x.q.replace(/<[^>]+>/g, "")).join(" | "))}"></i>` : `<i class="bub" aria-label="আসেনি"></i>`}</td>`; }).join("") +
+      P.exams.map(ex => { const h = hits(r.id, ex.no); return h.length
+        ? `<td class="hit"><button type="button" class="bub on" data-t="${esc(r.id)}" data-e="${ex.no}" aria-label="${esc(tag(ex.no))}: ${esc(r.name)}"` +
+          ` title="${esc(tag(ex.no))}: ${esc(h.map(x => x.q.replace(/<[^>]+>/g, "")).join(" | "))}"></button></td>`
+        : `<td><i class="bub" aria-label="আসেনি"></i></td>`; }).join("") +
       `</tr>`).join("")}</tbody></table>`;
   const top = counted.slice().sort((a, b) => b.n - a.n).slice(0, 3);
   if ($("#prevTop")) $("#prevTop").innerHTML = top.map(r => `<b>${esc(r.name)}</b> (${bn(r.n)}টি পরীক্ষায়)`).join(", ");
+
+  // A tap on a filled bubble (anywhere in its cell, as the bubbles are small on a phone) shows that exam's
+  // questions on this part just under the map. Hovering with a mouse still shows them as a tooltip too.
+  const fig = grid.closest("figure") || grid;
+  fig.insertAdjacentHTML("afterend", `<div class="omr-read" id="prevRead" aria-live="polite" hidden></div>`);
+  const read = $("#prevRead");
+  grid.onclick = e => {
+    const b = e.target.closest("td.hit")?.querySelector("button"); if (!b) return;
+    const r = counted.find(x => x.id === b.dataset.t), no = Number(b.dataset.e);
+    const year = bn((P.exams.find(x => x.no === no) || {}).year || "");
+    $$(".bub.sel", grid).forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel");
+    read.innerHTML = `<p class="prev-h">${ord(no)} পরীক্ষা, ${year} <span>${esc(r.name)}</span></p><ol class="prev">${hits(r.id, no).map(li).join("")}</ol>`;
+    read.hidden = false;
+    read.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
 }
 
 /* "উত্তর লুকান": answers stay hidden until each one is revealed. Remembered between visits. */
@@ -302,7 +386,192 @@ function setupSectionBar(sections = ".blk") {
       if (a) mark(a);
     });
   }, { rootMargin: "-30% 0px -60% 0px" });
-  $$(sections).forEach(s => spy.observe(s));
+  $$(sections).filter(s => s.id).forEach(s => spy.observe(s));   // only parts the bar links to (not the chapter links at the end)
+}
+
+
+/* ================= STEP-BY-STEP CONVERTER (chapter ২ note, #conv) ================= */
+/* The reader types a number, picks the base it is written in and the base to convert to, and the page writes out the
+   working the same way the worked answers do: the division ladder, the fraction × base table, bit groups, the four-step
+   binary bridge, or the place-value expansion. Values are exact fractions (BigInt), and the answer is checked against
+   the number typed before anything is shown. */
+const CV = {
+  DIG: "0123456789ABCDEF",
+  NAME: { 2: "বাইনারি", 8: "অক্টাল", 10: "দশমিক", 16: "হেক্সাডেসিমাল" },
+  HAS: { 2: "শুধু 0 ও 1", 8: "0 থেকে 7", 10: "0 থেকে 9", 16: "0–9 আর A–F" },
+  PLACES: { 2: 8, 8: 4, 16: 4 },     // how far a never-ending fraction is taken, as in the worked answers
+  UP: `<div class="readup" aria-hidden="true"><svg viewBox="0 0 24 150" preserveAspectRatio="none"><path d="M12 146 V8 M5 15 L12 6 L19 15"/></svg><span>নিচ থেকে পড়ুন</span></div>`,
+  DOWN: `<div class="readup" aria-hidden="true"><svg viewBox="0 0 24 150" preserveAspectRatio="none"><path d="M12 4 V142 M5 135 L12 144 L19 135"/></svg><span>ওপর থেকে পড়ুন</span></div>`
+};
+// Exact fractions {n, d} with BigInt.
+const cvGcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [a, b] = [b, a % b]; return a; };
+const cvQ = (n, d = 1n) => { const g = cvGcd(n, d) || 1n; return { n: n / g, d: d / g }; };
+const cvAdd = (a, b) => cvQ(a.n * b.d + b.n * a.d, a.d * b.d);
+const cvSub = (a, b) => cvQ(a.n * b.d - b.n * a.d, a.d * b.d);
+const cvMul = (a, b) => cvQ(a.n * b.n, a.d * b.d);
+const cvEq = (a, b) => a.n === b.n && a.d === b.d;
+function cvValue(int, frac, base) {
+  const B = BigInt(base); let v = cvQ(0n), p = cvQ(1n);
+  for (const c of int) v = cvAdd(cvMul(v, cvQ(B)), cvQ(BigInt(CV.DIG.indexOf(c))));
+  for (const c of frac) { p = cvMul(p, cvQ(1n, B)); v = cvAdd(v, cvMul(p, cvQ(BigInt(CV.DIG.indexOf(c))))); }
+  return v;
+}
+function cvDec(q, max = 30) {      // exact decimal string, "…" if it goes on past max places
+  let s = (q.n / q.d).toString(), r = q.n % q.d;
+  if (!r) return s;
+  let f = "";
+  for (let i = 0; i < max && r; i++) { r *= 10n; f += (r / q.d).toString(); r %= q.d; }
+  return s + "." + f + (r ? "…" : "");
+}
+const cvN = (s, b) => `(${s})<sub>${b}</sub>`;
+const cvDg = (v, base) => (base === 16 && v >= 10 ? `${v} (${CV.DIG[v]})` : `${v}`);
+const cvJoin = (int, frac) => (int.replace(/^0+(?=.)/, "") || "0") + (frac.replace(/0+$/, "") ? "." + frac.replace(/0+$/, "") : "");
+
+// What was typed: Bengali digits allowed, lower-case letters allowed, spaces ignored.
+function cvParse(raw, base) {
+  const s = raw.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\s+/g, "").toUpperCase();
+  if (!s) return { err: "একটি সংখ্যা লিখুন।" };
+  if (/^[-−]/.test(s)) return { err: "ঋণাত্মক সংখ্যা এখানে নয়; সেগুলো লেখা হয় ২-এর পরিপূরকে (অংশ ৭)।" };
+  const beyond = s.match(/[G-Z]/);
+  if (beyond) return { err: `${beyond[0]} কোনো প্রচলিত সংখ্যা পদ্ধতির অঙ্ক নয়; সবচেয়ে বড় অঙ্ক হেক্সাডেসিমালের F (= ১৫)। তাই সংখ্যাটি বৈধ নয়।` };
+  if (!/^[0-9A-F]*\.?[0-9A-F]*$/.test(s) || s === ".") return { err: "শুধু অঙ্ক 0–9, A–F আর সর্বোচ্চ একটি বিন্দু লেখা যায়।" };
+  const bad = [...s].find(c => c !== "." && CV.DIG.indexOf(c) >= base);
+  if (bad) return { err: `${CV.NAME[base]} পদ্ধতিতে ${bad} অঙ্কটি নেই; এতে আছে ${CV.HAS[base]}। সংখ্যাটি কোন পদ্ধতির, সেটি ঠিক করে বাছুন।` };
+  const [i, f = ""] = s.split(".");
+  const int = i.replace(/^0+(?=.)/, "") || "0", frac = f.replace(/0+$/, "");
+  if (int.length > 12 || frac.length > 6) return { err: "পূর্ণ অংশে ১২টি আর ভগ্নাংশে ৬টি অঙ্ক পর্যন্ত লিখুন।" };
+  return { int, frac, text: cvJoin(int, frac) };
+}
+
+// Whole number: divide by the base again and again; read the remainders upwards.
+function cvLadder(n, base) {
+  const B = BigInt(base), rows = [];
+  for (let x = n; x > 0n; x /= B) rows.push([x, Number(x % B)]);
+  const digits = rows.map(r => CV.DIG[r[1]]).reverse().join("");
+  return { digits, html: `<div class="work"><div class="ladder" role="img" aria-label="${bn(n)}-কে ${bn(base)} দিয়ে বারবার ভাগ; ভাগশেষগুলো নিচ থেকে পড়লে ${digits}।">` +
+    rows.map(([q, r]) => `<span class="dv">${base}</span><span class="qt">${q}</span><span class="rm">${cvDg(r, base)}</span>`).join("") +
+    `<span class="dv"></span><span class="qt end">0</span><span class="rm"></span></div>${CV.UP}<p class="work-res">${cvN(n, 10)} = (<b>${digits}</b>)<sub>${base}</sub></p></div>` };
+}
+// Decimal fraction: multiply by the base again and again; read the whole parts downwards.
+function cvFrac(fd, base) {
+  const places = CV.PLACES[base], k = fd.length, T = 10n ** BigInt(k), B = BigInt(base);
+  const show = q => { const s = (q.n * T) / q.d; return `${s / T}.${(s % T).toString().padStart(k, "0")}`; };
+  let f = cvQ(BigInt(fd), T), digits = "", cycle = null;
+  const rows = [], seen = new Map();
+  for (let i = 0; i < places && f.n !== 0n; i++) {
+    const key = `${f.n}/${f.d}`;
+    if (seen.has(key) && !cycle) cycle = [seen.get(key), i];
+    if (!seen.has(key)) seen.set(key, i);
+    const v = cvMul(f, cvQ(B)), ip = Number(v.n / v.d);
+    rows.push(`<tr><td>${show(f)} × ${base} = ${show(v)}</td><td>${cvDg(ip, base)}</td></tr>`);
+    digits += CV.DIG[ip]; f = cvSub(v, cvQ(BigInt(ip)));
+  }
+  const exact = f.n === 0n;
+  if (!exact && !cycle && seen.has(`${f.n}/${f.d}`)) cycle = [seen.get(`${f.n}/${f.d}`), rows.length];
+  const note = exact ? `${bn(rows.length)}টি ধাপে ভগ্নাংশ ০ হয়েছে, তাই উত্তর হুবহু।`
+    : cycle ? `${bn(cycle[0] + 1)} নম্বর ধাপের ভগ্নাংশ ${bn(cycle[1] + 1)} নম্বর ধাপে আবার এসেছে, তাই ${digits.slice(cycle[0], cycle[1])} অংশটি বারবার ফিরে আসবে; ভগ্নাংশটি শেষ হয় না। ${bn(places)} ঘর পর্যন্ত নেওয়া হলো।`
+    : `ভগ্নাংশটি ${bn(places)} ঘরে শেষ হয়নি, তাই ${bn(places)} ঘর পর্যন্ত নেওয়া হলো।`;
+  return { digits, exact, note, html: `<div class="work"><table class="truth trace"><thead><tr><th>ভগ্নাংশ × ${bn(base)}</th><th>পূর্ণ অংশ</th></tr></thead><tbody>${rows.join("")}</tbody></table>${CV.DOWN}<p class="work-res">(0.${fd})<sub>10</sub> ${exact ? "=" : "≈"} (<b>0.${digits}</b>)<sub>${base}</sub></p></div>` };
+}
+// Binary digits -> groups of n from the point, zeros added at the outer ends.
+function cvGroups(int, frac, n) {
+  int = int.replace(/^0+(?=.)/, ""); int = "0".repeat((n - (int.length % n)) % n) + int;
+  frac += "0".repeat(frac ? (n - (frac.length % n)) % n : 0);
+  const g = s => s.match(new RegExp(`.{${n}}`, "g")) || [];
+  return { int: g(int), frac: g(frac) };
+}
+// Bit groups drawn as in section ৫ (each group over the digit it makes), or digits over their bits.
+const cvGroupFig = (gr, label, res) => `<div class="groups" role="img" aria-label="${label}">` +
+  gr.int.map(([bits, d]) => `<span><code>${bits}</code><b>${d}</b></span>`).join("") +
+  (gr.frac.length ? `<span class="gpt"><code>.</code></span>` + gr.frac.map(([bits, d]) => `<span><code>${bits}</code><b>${d}</b></span>`).join("") : "") +
+  `<p class="work-res">${res}</p></div>`;
+// The 8421 picture: each weight over a bubble, filled for 1.
+function cvWeights(int, frac) {
+  const w = (k) => (k >= 0 ? String(2 ** k) : String(2 ** k).replace(/^0/, ""));
+  const cell = (b, k) => `<span><small>${w(k)}</small><i class="bub${b === "1" ? " on" : ""}">${b}</i></span>`;
+  const used = [...int].map((b, i) => [b, int.length - 1 - i]).concat([...frac].map((b, i) => [b, -(i + 1)])).filter(([b]) => b === "1").map(([, k]) => w(k));
+  return `<div class="wrow" role="img" aria-label="প্রতিটি ঘরের ওজনের নিচে বিট; যেখানে 1, সেই ওজনগুলো যোগ">` + [...int].map((b, i) => cell(b, int.length - 1 - i)).join("") +
+    (frac ? `<span class="wpt"><small>&nbsp;</small><b>.</b></span>` + [...frac].map((b, i) => cell(b, -(i + 1))).join("") : "") + `</div>` +
+    `<p class="work-res">${used.length ? used.join(" + ") : "0"}</p>`;
+}
+
+function cvSolve(p, from, to) {
+  const v = cvValue(p.int, p.frac, from), parts = [];
+  const pr = s => parts.push(`<p class="prose">${s}</p>`), ex = (l, s) => parts.push(`<p class="expand"><span>${l}</span> ${s}</p>`);
+  let out, approx = false;
+  if (to === 10) {
+    if (from === 2) { pr("৮৪২১ নিয়মে: যে ঘরে 1, শুধু সেই ঘরের ওজন যোগ করুন।"); parts.push(cvWeights(p.int, p.frac)); }
+    out = cvDec(v);
+    const terms = [...p.int].map((c, i) => [c, p.int.length - 1 - i]).concat([...p.frac].map((c, i) => [c, -(i + 1)]));
+    const t1 = terms.map(([c, k]) => `${CV.DIG.indexOf(c)}×${from}<sup>${k}</sup>`).join(" + ");
+    const t2 = terms.filter(([c]) => c !== "0").map(([c, k]) => cvDec(cvMul(cvQ(BigInt(CV.DIG.indexOf(c))), k >= 0 ? cvQ(BigInt(from) ** BigInt(k)) : cvQ(1n, BigInt(from) ** BigInt(-k))))).join(" + ") || "0";
+    pr(`${from === 2 ? "ঘাতের রূপে লিখলে" : "প্রতিটি অঙ্ককে তার স্থানীয় মান, অর্থাৎ ভিত্তির ঘাত দিয়ে গুণ করে যোগ"}:`);
+    ex(cvN(p.text, from), `= ${t1} = ${t2} = (<b>${out}</b>)<sub>10</sub>`);
+    if (p.int.length > 1) {
+      let r = 0n; const steps = [...p.int].map((c, i) => { const d = BigInt(CV.DIG.indexOf(c)); const s = i ? `${r} × ${from} + ${d} = ${r * BigInt(from) + d}` : `${d}`; r = r * BigInt(from) + d; return s; });
+      ex("গুণ করে যোগ (পূর্ণ অংশ)", steps.join(" → "));
+    }
+  } else if (from === 10) {
+    pr(`পূর্ণ অংশ ${bn(to)} দিয়ে বারবার ভাগ${p.frac ? `, ভগ্নাংশ ${bn(to)} দিয়ে বারবার গুণ` : ""}।`);
+    let oi = "0";
+    if (p.int !== "0") { const l = cvLadder(BigInt(p.int), to); parts.push(l.html); oi = l.digits; } else pr("পূর্ণ অংশ ০, তাই ভাগের দরকার নেই।");
+    let of = "";
+    if (p.frac) { const f = cvFrac(p.frac, to); parts.push(f.html); pr(f.note); of = f.digits; approx = !f.exact; }
+    out = cvJoin(oi, of);
+    if (to !== 2 && p.frac) pr("অক্টাল বা হেক্সায় চাইলে আগে বাইনারিতে নিয়ে দল করেও পারেন; তবে ভগ্নাংশ শেষ না হলে সরাসরি গুণ করাই নিরাপদ।");
+  } else if (from === 2) {
+    const n = to === 8 ? 3 : 4, gr = cvGroups(p.int, p.frac, n), rd = g => g.map(b => [b, CV.DIG[parseInt(b, 2)]]);
+    out = cvJoin(gr.int.map(b => CV.DIG[parseInt(b, 2)]).join(""), gr.frac.map(b => CV.DIG[parseInt(b, 2)]).join(""));
+    pr(`বিন্দু থেকে দুই দিকে ${bn(n)} বিটের দল করুন (কম পড়লে বাইরের দিকে 0), তারপর প্রতিটি দল ${n === 3 ? "৪২১" : "৮৪২১"} ওজনে পড়ুন:`);
+    parts.push(cvGroupFig({ int: rd(gr.int), frac: rd(gr.frac) }, `${n} বিটের দল`, `${cvN(p.text, 2)} = (<b>${out}</b>)<sub>${to}</sub>`));
+  } else if (to === 2) {
+    const n = from === 16 ? 4 : 3, bits = c => CV.DIG.indexOf(c).toString(2).padStart(n, "0");
+    out = cvJoin([...p.int].map(bits).join(""), [...p.frac].map(bits).join(""));
+    pr(`প্রতিটি ${CV.NAME[from]} অঙ্কের জায়গায় তার ${bn(n)} বিট লিখুন (${n === 4 ? "৮৪২১" : "৪২১"} ওজনে); তারপর একেবারে বাঁয়ের আর ডানের বাড়তি 0 বাদ।`);
+    parts.push(cvGroupFig({ int: [...p.int].map(c => [bits(c), c]), frac: [...p.frac].map(c => [bits(c), c]) }, "প্রতিটি অঙ্কের ওপরে তার বিট", `${cvN(p.text, from)} = (<b>${out}</b>)<sub>2</sub>`));
+  } else {
+    const n1 = from === 16 ? 4 : 3, n2 = to === 16 ? 4 : 3;
+    const vals = s => [...s].map(c => CV.DIG.indexOf(c)).join(" ");
+    const bits = s => [...s].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(" ");
+    const gr = cvGroups([...p.int].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(""), [...p.frac].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(""), n2);
+    const show = g => g.int.join(" ") + (g.frac.length ? " . " + g.frac.join(" ") : "");
+    out = cvJoin(gr.int.map(b => CV.DIG[parseInt(b, 2)]).join(""), gr.frac.map(b => CV.DIG[parseInt(b, 2)]).join(""));
+    pr(`${CV.NAME[from]} থেকে ${CV.NAME[to]}ে সরাসরি যাওয়া যায় না; বাইনারি সেতু হয়ে চার ধাপে:`);
+    parts.push(`<table class="rt cmp eqtab"><thead><tr><th>ধাপ</th><th>কী করবেন</th><th>এই সংখ্যায়</th></tr></thead><tbody>
+      <tr><td>১</td><td>প্রতিটি অঙ্কের মান লিখুন</td><td class="m">${vals(p.int)}${p.frac ? " . " + vals(p.frac) : ""}</td></tr>
+      <tr><td>২</td><td>প্রতিটি মান ${bn(n1)} বিটে (${n1 === 4 ? "৮৪২১" : "৪২১"})</td><td class="m">${bits(p.int)}${p.frac ? " . " + bits(p.frac) : ""}</td></tr>
+      <tr><td>৩</td><td>বিন্দু থেকে দুই দিকে ${bn(n2)} বিটের দল; কম পড়লে বাইরের দিকে 0</td><td class="m">${show(gr)}</td></tr>
+      <tr><td>৪</td><td>প্রতিটি দল ${n2 === 4 ? "৮৪২১" : "৪২১"} ওজনে পড়ুন</td><td class="m">${[...out].join(" ")}</td></tr></tbody></table>`);
+  }
+  // Check the answer exactly (or within the last kept place, if the fraction was cut short) before showing it.
+  const [oi, of = ""] = out.split("."), ov = cvValue(oi, of, to), diff = cvSub(v, ov);
+  const fine = approx ? diff.n >= 0n && diff.n * BigInt(to) ** BigInt(CV.PLACES[to]) < diff.d : cvEq(v, ov);
+  if (!fine) return `<p class="gate-err">দুঃখিত, এই সংখ্যার হিসাবে একটি গোলমাল হয়েছে। অন্য একটি সংখ্যা দিয়ে চেষ্টা করুন।</p>`;
+  parts.push(`<p class="final"><b>উত্তর</b>${cvN(p.text, from)} ${approx ? "≈" : "="} ${cvN(out, to)}</p>`);
+  parts.push(`<p class="prose">যাচাই: ${approx ? `${cvN(out, to)} = ${bn(cvDec(ov, 10))} ≈ ${bn(cvDec(v, 10))}` : `দুটিরই দশমিক মান ${bn(cvDec(v, 12))}`}।</p>`);
+  return parts.join("\n");
+}
+
+function setupConverter() {
+  const form = $("#conv-form"), num = $("#conv-num"), out = $("#conv-out"), err = $("#conv-err");
+  const fail = m => { err.textContent = m; err.hidden = false; out.innerHTML = ""; };
+  const run = () => {
+    const from = Number(form.cvfrom.value), to = Number(form.cvto.value);
+    err.hidden = true;
+    if (from === to) return fail("দুটি পদ্ধতি একই; যে পদ্ধতিতে নেবেন, সেটি আলাদা বাছুন।");
+    const p = cvParse(num.value, from);
+    if (p.err) return fail(p.err);
+    if (p.int === "0" && !p.frac) { out.innerHTML = `<p class="final"><b>উত্তর</b>${cvN("0", from)} = ${cvN("0", to)}</p>`; return; }
+    out.innerHTML = cvSolve(p, from, to);
+  };
+  form.onsubmit = e => { e.preventDefault(); run(); };
+  // Changing a base redraws the working, once something has been shown.
+  form.addEventListener("change", e => { if (/^cv(from|to)$/.test(e.target.name) && (out.innerHTML || !err.hidden)) run(); });
+  $$("[data-ex]", form).forEach(b => (b.onclick = () => {
+    const [n, f, t] = b.dataset.ex.split(",");
+    num.value = n; form.cvfrom.value = f; form.cvto.value = t; run();
+    out.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }));
 }
 
 
@@ -619,8 +888,6 @@ function startExam(opts) {
 const saveExam = () => store.set("exam", exam);
 
 function examView(arg) {
-  // "#/exam/new" (the demo strip) starts a sample exam; the address is then swapped for "#/exam", so a reload resumes it.
-  if (arg === "new") { exam = newExam(); saveExam(); return location.replace("#/exam"); }
   exam = exam || store.get("exam", null);
   // Nothing running (e.g. Back from a result): go to the setup form instead of starting an exam nobody asked for.
   if (!validRecord(exam)) {
@@ -654,7 +921,7 @@ function examView(arg) {
     <nav class="ebot" aria-label="প্রশ্ন বদলান">
       <button class="tbtn" type="button" data-go="-1">← আগের</button>
       <button class="sheetbtn" type="button" id="sheetBtn" aria-expanded="false">উত্তরপত্র <b id="sheetBtnCount"></b></button>
-      <button class="tbtn" type="button" data-go="1">পরের →</button>
+      <button class="tbtn" type="button" data-go="1" id="ebNext">পরের →</button>
     </nav>
   </div>`;
 
@@ -672,7 +939,7 @@ function examView(arg) {
 }
 
 function renderQuestion(popIndex) {
-  const q = QBY[exam.order[exam.cur]], chosen = exam.ans[exam.cur], n = exam.order.length;
+  const q = QBY[exam.order[exam.cur]], chosen = exam.ans[exam.cur], n = exam.order.length, last = exam.cur === n - 1;
   $("#qNo").textContent = bn(exam.cur + 1);
   $("#qpane").innerHTML = `
     <div class="qhead"><span class="qno">${bn(pad2(exam.cur + 1))}</span><span class="qsubj">${esc(chapterOf(q.c).name)}</span>${exam.flag[exam.cur] ? '<span class="qflag">পরে দেখবেন</span>' : ""}</div>
@@ -684,10 +951,14 @@ function renderQuestion(popIndex) {
     <div class="qact">
       <button class="btn line sm prev" type="button" data-go="-1"${exam.cur === 0 ? " disabled" : ""}>← আগের</button>
       <button class="tbtn" type="button" data-flag>${exam.flag[exam.cur] ? "চিহ্ন তুলে দিন" : "পরে দেখব"}</button>
-      <button class="btn sm next" type="button" data-go="1"${exam.cur === n - 1 ? " disabled" : ""}>পরের →</button>
+      ${last ? `<button class="btn sm next" type="button" data-submit>জমা দিন</button>` : `<button class="btn sm next" type="button" data-go="1">পরের →</button>`}
     </div>
     <div class="qquit">${autoSwitch()}<button class="tbtn" type="button" data-quit>পরীক্ষা বাতিল করুন</button></div>`;
-  $$(".ebot [data-go]").forEach(b => (b.disabled = (b.dataset.go === "-1" && exam.cur === 0) || (b.dataset.go === "1" && exam.cur === n - 1)));
+  // On the last question, "পরের" (here and in the phone's bottom bar) becomes "জমা দিন".
+  $(".ebot [data-go='-1']").disabled = exam.cur === 0;
+  const fwd = $("#ebNext");
+  fwd.textContent = last ? "জমা দিন" : "পরের →";
+  fwd.toggleAttribute("data-submit", last);
   renderSheet();
 }
 
@@ -733,7 +1004,7 @@ function choose(qi, opt, onScreen) {
   saveExam();
   if (qi === exam.cur) renderQuestion(exam.ans[qi] === null ? undefined : opt); else renderSheet();
   if (!onScreen || !autoNext() || qi !== exam.cur || exam.ans[qi] === null) return;
-  if (qi === exam.order.length - 1) return toast("এটিই শেষ প্রশ্ন। উত্তরপত্র দেখে জমা দিন।");
+  if (qi === exam.order.length - 1) return toast("এটিই শেষ প্রশ্ন। উত্তরপত্র দেখে নিয়ে “জমা দিন” চাপুন।");
   autoTimer = setTimeout(() => { if (exam && document.body.dataset.screen === "exam" && exam.cur === qi) go(1); }, 350);
 }
 function go(step) {
@@ -775,20 +1046,38 @@ function tick() {
   $("#clock").innerHTML = [...bn(`${pad2(Math.floor(left / 60))}:${pad2(left % 60)}`)]
     .map(c => (c === ":" ? '<span class="colon">:</span>' : `<span class="d">${c}</span>`)).join("");
   $("#clock").classList.toggle("low", left <= Math.min(300, exam.mins * 12));
-  if (left <= 0) finish(true);
+  if (left <= 0) return finish(true);
+  timeWarning(left);
+}
+
+/* A warning at 5 minutes left and again at 1 minute: a message, and a short buzz on phones that allow it.
+   Each comes once per exam (remembered with the exam, so a reload doesn't repeat it), and only in an exam at least
+   twice that long: a 6-minute exam gets no "5 minutes left". Coming back to an exam after both marks have passed
+   shows only the later one, with the real minutes left. */
+const WARN_AT = [300, 60];
+function timeWarning(left) {
+  const due = WARN_AT.filter(s => left <= s && exam.mins * 60 >= s * 2 && !(exam.warned || []).includes(s));
+  if (!due.length) return;
+  exam.warned = [...(exam.warned || []), ...due]; saveExam();
+  const mins = bn(Math.max(1, Math.ceil(left / 60)));
+  toast(left <= 60 ? `আর ${mins} মিনিট বাকি। সময় শেষ হলে উত্তরপত্র নিজে থেকেই জমা হয়ে যাবে।` : `আর ${mins} মিনিট বাকি।`, 6000);
+  // A phone may buzz only after the page has been tapped; asking earlier just logs an error.
+  try { if (navigator.vibrate && navigator.userActivation?.hasBeenActive !== false) navigator.vibrate(200); } catch (e) {}
 }
 
 let finishing = false;
-async function finish(timeUp) {
+/* alwaysAsk: the "জমা দিন" that replaces "পরের" on the last question asks even when every question is answered,
+   because a reader tapping "পরের" through the paper could otherwise hand it in by mistake. */
+async function finish(timeUp, alwaysAsk = false) {
   if (!exam) return;
   if (timeUp && asking) asking(false);              // time ran out while the "submit anyway?" box was open
   if (!timeUp) {
     if (finishing) return;
     const empty = exam.ans.filter(a => a === null).length, flagged = exam.flag.filter(Boolean).length;
     const msg = [empty && `${bn(empty)}টি প্রশ্নের উত্তর দেননি`, flagged && `${bn(flagged)}টি “পরে দেখব” চিহ্নিত`].filter(Boolean).join(", ");
-    if (msg) {
+    if (msg || alwaysAsk) {
       finishing = true;
-      const ok = await ask(`${msg}। তবুও জমা দেবেন?`, "জমা দিন", "ফিরে যান");
+      const ok = await ask(msg ? `${msg}। তবুও জমা দেবেন?` : "সব প্রশ্নের উত্তর দিয়েছেন। এখন জমা দেবেন?", "জমা দিন", "ফিরে যান");
       finishing = false;
       if (!ok || !exam) return;
     }
@@ -805,6 +1094,7 @@ async function finish(timeUp) {
   store.set("last", { title: exam.title, order: exam.order, ans: exam.ans, flag: exam.flag, neg: exam.neg, mins: exam.mins,
     secs: Math.round((Math.min(Date.now(), exam.end) - exam.start) / 1000) });
   exam = null; store.del("exam");
+  clearTimeout(toastTimer); $("#toast").hidden = true;   // a time warning doesn't follow onto the result
   location.replace("#/result");                      // the result takes the exam's place, so Back doesn't return to it
 }
 
@@ -815,6 +1105,7 @@ view.addEventListener("click", e => {
   const opt = t.closest("[data-opt]"); if (opt) return choose(exam.cur, Number(opt.dataset.opt), true);
   const bub = t.closest("#omr .bub"); if (bub) return choose(Number(bub.dataset.q), Number(bub.dataset.i));
   const j = t.closest("[data-jump]"); if (j) return jump(Number(j.dataset.jump));
+  if (t.closest("[data-submit]")) return finish(false, true);   // the last question's "জমা দিন" (it sits where "পরের" was)
   const g = t.closest("[data-go]"); if (g) return go(Number(g.dataset.go));
   if (t.closest("[data-flag]")) { exam.flag[exam.cur] = !exam.flag[exam.cur]; saveExam(); return renderQuestion(); }
   if (t.closest("#submitBtn")) return finish(false);
@@ -888,9 +1179,8 @@ function result() {
         <div class="res-acts">
           ${retry.length
             ? `<button class="btn" type="button" id="retryBtn">ভুলগুলো আবার দিন <span class="cnt">${bn(retry.length)}টি প্রশ্ন</span></button>
-               <button class="btn line" type="button" id="shareBtn">বন্ধুকে একই পরীক্ষা পাঠান</button>`
-            : `<p class="allright">সব উত্তর ঠিক।</p><button class="btn" type="button" id="shareBtn">বন্ধুকে একই পরীক্ষা পাঠান</button>`}
-          <a class="tbtn" href="#/setup">নতুন পরীক্ষা</a>
+               <a class="tbtn" href="#/setup">নতুন পরীক্ষা</a>`
+            : `<p class="allright">সব উত্তর ঠিক।</p><a class="btn" href="#/setup">নতুন পরীক্ষা দিন</a>`}
         </div>
       </div>
     </section>
@@ -937,7 +1227,6 @@ function result() {
     $("#review").innerHTML = items || '<p class="empty">এখানে কিছু নেই।</p>';
   }
   $("#filters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; renderReview(); } };
-  $("#shareBtn").onclick = () => toast("ডেমো: আসল সাইটে এখানে লিংক তৈরি হয়ে Messenger বা WhatsApp-এ পাঠানো যাবে।");
   // Retest only this exam's wrong and skipped questions, at the real exam's pace.
   if ($("#retryBtn")) $("#retryBtn").onclick = async () => {
     if (!(await okToReplace())) return;
@@ -959,7 +1248,6 @@ function route() {
   // Top links (computers, tablets) and the bottom tab bar (phones) mark the same section. A note belongs to সূচি.
   const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", setup: "setup", exam: "setup", result: "setup" }[screen];
   $$(".nav a, .tabbar a").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === section));
-  $$(".demo nav a").forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href").split("/")[1] === (location.hash.split("/")[1] || "")));
   if (!sub) window.scrollTo(0, 0);
   // Floating shortcuts: home everywhere but home; lifted over the exam form's sticky summary.
   $("#toHome").hidden = screen === "";

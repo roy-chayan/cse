@@ -110,16 +110,6 @@ code{font-family:var(--mono)}
 .tbtn:hover{color:var(--ink);text-decoration-color:currentColor}
 .tbtn:disabled{opacity:.35;cursor:default;text-decoration:none}
 
-/* ---------- demo strip (remove with real content) ---------- */
-.demo{background:var(--ink);color:var(--paper);font-size:13px}
-.demo .wrap{display:flex;align-items:center;gap:14px;height:32px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
-.demo .wrap::-webkit-scrollbar{display:none}
-.demo b{font-weight:600;font-stretch:90%}
-.demo nav{display:flex;gap:14px;margin-left:auto}
-.demo a{text-decoration:none;opacity:.8}
-.demo a:hover,.demo a[aria-current]{opacity:1;text-decoration:underline;text-decoration-color:currentColor}
-@media (max-width:719px){.demo-what{display:none}.demo nav{margin-left:0}}
-
 /* ---------- top bar ---------- */
 .top{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
 .top .wrap{display:flex;align-items:center;gap:20px;height:58px}
@@ -156,6 +146,17 @@ code{font-family:var(--mono)}
 :root[data-theme="dark"] .logo-light{display:none !important}
 :root[data-theme="dark"] .logo-dark{display:block !important}
 .mast-lede{font-family:var(--serif);font-size:clamp(18px,2.1vw,22px);line-height:1.7;color:var(--ink-2);max-width:31em;margin:0}
+/* Motivational lines under the masthead, one at a time */
+.quotes{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 16px;padding:30px 0 0}
+.q-mark{font-family:var(--serif);font-size:58px;line-height:.9;color:var(--form)}
+.q-stage{display:grid;align-items:start;width:100%;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left}
+button.q-stage{cursor:pointer}
+.q-item{grid-area:1/1;margin:0;max-width:34em;font-family:var(--serif);font-size:clamp(19px,2.2vw,23px);line-height:1.7;color:var(--ink);
+  opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .45s ease,transform .45s ease,visibility 0s linear .45s}
+.q-item.on{opacity:1;visibility:visible;transform:none;transition:opacity .5s ease .2s,transform .5s ease .2s,visibility 0s}
+.q-item.out{transform:translateY(-10px)}
+@media (max-width:719px){.quotes{gap:0 10px;padding-top:24px}.q-mark{font-size:44px}}
+@media (prefers-reduced-motion:reduce){.q-item,.q-item.on{transition:none;transform:none}}
 @media (min-width:860px){.mast-row{grid-template-columns:auto 1fr;align-items:end;gap:64px}.mast-lede{padding-bottom:22px}}
 
 /* Key hints (the 1–4 shown beside exam options on a computer). */
@@ -345,6 +346,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .expand>span:first-child{color:var(--ink-2)}
 .tip{margin:22px 0 0;padding:2px 0 2px 16px;border-left:3px solid var(--hl);font-family:var(--serif);font-size:18px;line-height:1.75;max-width:36em}
 .tip b{font-weight:400;color:var(--form-ink)}
+.tip+.prose{margin-top:18px}
 .handsum{display:grid;grid-template-columns:auto 1fr;justify-content:start;gap:4px 26px;align-items:baseline;margin:6px 0 0}
 .handsum code{font-size:23px;letter-spacing:.32em;text-align:right;white-space:pre}
 .handsum span{font-size:15px;color:var(--ink-2)}
@@ -439,6 +441,16 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .note-links li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 18px;padding:12px 0;border-bottom:1px solid var(--rule)}
 .note-links a{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--form-ink)}
 .note-links span{font-size:13.5px;color:var(--ink-3)}
+/* The end of a note: the previous chapter on the left, the next on the right. */
+.chpager{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.chp{display:flex;flex-direction:column;gap:3px;padding:10px 0 4px;color:var(--ink);text-decoration:none}
+.chp.nx{grid-column:2;align-items:flex-end;text-align:right}
+.chp small{font-size:13.5px;color:var(--ink-3)}
+.chp b{font-family:var(--serif);font-weight:400;font-size:20px;line-height:1.45;color:var(--form-ink)}
+.chp span{font-size:13.5px;color:var(--ink-3)}
+a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
+.chp.soon b{color:var(--ink-3)}
+@media (max-width:719px){.chp b{font-size:17.5px}}
 .note .work+.work,.note .groups+.groups{margin-top:26px}
 .note .truth{margin:6px 0 14px}
 .note .bcalc{margin-top:12px}
@@ -469,6 +481,12 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .grid-hint{display:none}
 @media (max-width:719px){.grid-hint{display:inline}}
 .omrgrid td.n small{font-size:11.5px;color:var(--ink-3)}
+/* A filled bubble can be tapped (its whole cell counts); the chosen one gets a ring, and its questions show under the map. */
+.omrgrid td.hit{cursor:pointer}
+.omrgrid button.bub{cursor:pointer}
+.omrgrid td.hit:hover .bub:not(.sel){outline:1.5px solid var(--rule-2);outline-offset:2px}
+.omrgrid .bub.sel{outline:2px solid var(--form);outline-offset:2px}
+.omr-read .prev-h{margin-top:18px}
 /* A dated list down a rule, each date on a bubble */
 .tl{list-style:none;margin:8px 0 0 6px;padding:0;border-left:1.5px solid var(--ink)}
 .tl li{position:relative;display:grid;grid-template-columns:7.2em minmax(0,1fr);gap:2px 14px;padding:9px 0 9px 20px;border-bottom:1px solid var(--rule)}
@@ -623,7 +641,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .part-h>span{flex:1;min-width:0}
 .part-h .mk{--s:36px;font-size:16px;font-weight:600;border-width:1.5px}
 .sub-h{display:flex;align-items:baseline;gap:10px;margin:24px 0 8px;font-family:var(--serif);font-weight:400;font-size:18.5px;line-height:1.5}
-.sub-h>span:first-child{font-family:var(--sans);font-size:13.5px;color:var(--form-ink)}
+.sub-h>span:first-child{font-family:var(--sans);font-size:13.5px;color:var(--form-ink);white-space:nowrap}
 .wq-ans .work,.wq-ans .groups{margin-bottom:18px}
 .defn{margin:0 0 14px;padding:12px 16px;background:var(--sheet);border-left:3px solid var(--form);font-family:var(--serif);font-size:18px;line-height:1.8}
 .defn b{display:block;margin-bottom:2px;font-family:var(--sans);font-weight:500;font-size:13px;color:var(--form-ink)}
@@ -654,6 +672,14 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .gates{display:flex;flex-wrap:wrap;align-items:center;gap:14px 36px;margin:18px 0 16px}
 .gate-sym{margin:0;width:190px}
 .gate-sym.circ{width:220px}                   /* switch-and-lamp circuits of the basic gates */
+.gate-sym.duo{width:300px;max-width:100%}     /* two gates in a row, e.g. OR then NOT */
+.fig.wide.tight svg{min-width:320px;max-width:420px}   /* a small circuit that fits a phone without scrolling */
+.eqtab td.m{white-space:nowrap}               /* short formulas ("Y = A + B") stay on one line */
+/* A circuit whose wires carry full expressions with stacked bars: the labels are HTML inside the drawing,
+   so .ov works there too. Slightly wider than a phone, so it scrolls a little rather than shrink the bars. */
+.fig.wide.labels svg{min-width:440px;max-width:520px}
+.fig.eqfig svg{width:auto;max-width:100%}      /* a small labelled circuit: its own width attribute, never wider than the column */
+.fig .flab{display:inline-block;font-family:var(--mono);font-size:13px;line-height:1.15;white-space:nowrap;color:currentColor}
 .truth{border-collapse:collapse;font-family:var(--mono);font-size:15px}
 .truth th,.truth td{padding:5px 14px;text-align:center;border-bottom:1px solid var(--rule)}
 .truth th{font-family:var(--sans);font-weight:500;font-size:13px;color:var(--ink-3);border-bottom-color:var(--ink)}
@@ -661,6 +687,30 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .trace{margin:4px 0 0}
 .trace td:last-child{font-family:var(--sans);font-weight:500}
 .trace th,.trace td{white-space:nowrap}
+.cols{margin:6px 0 0}                          /* column-by-column working for a sum or difference */
+.cols td:nth-child(2){text-align:left;white-space:normal}
+.cols td small{display:block;margin-top:1px;font-family:var(--sans);font-size:12px;line-height:1.3;color:var(--ink-3)}
+/* ৮৪২১ নিয়ম: compact weight tables, and weights over answer-sheet bubbles (filled = 1) */
+.wt{margin:10px 0 0}
+.wt th,.wt td{padding:5px 8px}
+.wt td:last-child{color:inherit;font-weight:inherit}   /* every weight is equal here; no last-column highlight */
+.wrow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin:16px 0 0}
+.wrow>span{display:flex;flex-direction:column;align-items:center;gap:5px}
+.wrow small{font-family:var(--mono);font-size:12.5px;color:var(--ink-3)}
+.wrow .bub{--s:30px;font-family:var(--mono)}
+.wrow .wpt b{font-family:var(--mono);font-size:24px;line-height:30px}
+.wrow+.work-res{margin-top:10px}
+.cp{color:var(--form-ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px}   /* 2's-complement shortcut: the bits copied as they are */
+/* The step-by-step converter in the chapter ২ note */
+.conv .fsec{padding:18px 0}
+.conv-field{max-width:22em}
+.conv-field input{text-transform:uppercase}
+.conv-field input::placeholder{text-transform:none;color:var(--ink-3);font-size:18px;letter-spacing:0}
+.conv-acts{margin:20px 0 0}
+.conv-ex{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin:14px 0 0;font-size:14px;color:var(--ink-3)}
+.conv-ex .tbtn{font-size:14px;min-height:40px;font-family:var(--mono)}
+.conv-out{margin-top:10px;padding-top:6px;border-top:1px solid var(--rule)}
+.conv-out:empty{display:none}
 /* Very narrow phones: let comparison tables and side-by-side working give up a little room */
 @media (max-width:400px){
   .rt.cmp th,.rt.cmp td{padding-right:10px}
@@ -696,6 +746,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .bcalc span b{font-weight:600;color:var(--ink)}
 .bcalc .add{padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
 .bcalc .res{font-weight:600}
+.bcalc .cy{color:var(--form-ink)}             /* the carries, written above the columns they go into */
 .carry{font-style:normal;color:var(--bad-ink);text-decoration:line-through;text-decoration-thickness:2px}
 .carry.keep{color:var(--form-ink);text-decoration:none}   /* a carry that is kept and moves on, not dropped */
 @media (max-width:480px){
@@ -949,6 +1000,7 @@ body[data-screen="exam"] .top{display:none}
     padding:8px var(--gut) calc(8px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--ink)}
   .ebot .tbtn{justify-self:start;min-height:44px}
   .ebot .tbtn:last-child{justify-self:end}
+  .ebot .tbtn[data-submit]{color:var(--primary-text);font-weight:600}
   .sheetbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--form);border-radius:22px;background:var(--sheet);color:var(--form-ink);font-size:15px;cursor:pointer}
   .sheetbtn b{font-weight:500;color:var(--ink)}
   .qno{font-size:50px}
@@ -1037,7 +1089,7 @@ body[data-screen="exam"] .top{display:none}
 
 /* ---------- daily password ---------- */
 /* While <html> has class "locked", only the password screen exists on screen; the app draws nothing behind it. */
-html.locked .demo,html.locked .top,html.locked #view,html.locked .toast{display:none !important}
+html.locked .top,html.locked #view,html.locked .toast{display:none !important}
 html:not(.locked) .gate{display:none}
 .gate{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 .gate-bar{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
@@ -1126,4 +1178,4 @@ body[data-screen="exam"] .fab,html.locked .fab{display:none}
   *,*::before,*::after{transition:none !important;animation:none !important}
   .score path{stroke-dashoffset:0}
 }
-@media print{.demo,.top,.secbar,.switch,.reveal,.ebot{display:none !important}body{background:#fff}}
+@media print{.top,.secbar,.switch,.reveal,.ebot{display:none !important}body{background:#fff}}

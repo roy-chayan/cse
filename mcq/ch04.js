@@ -4,7 +4,7 @@
    noExam: true keeps a question out of exams (more than one option is correct); it still shows in the chapter list.
    A question's id is "<chapter id>-<number>", so the order must not change once people have practised. */
 (window.ICT_MCQ = window.ICT_MCQ || []).push({
-  id: "ch04", no: 4, name: "লজিক সার্কিট ও লজিক গেট",
+  id: "ch04", no: 4, name: "লজিক সার্কিট ও লজিক গেট", note: "#/note/logic-gates",
   questions: [
     // প্রশ্ন ১–২০ · মৌলিক গেট: AND, OR, NOT
     { q: "মৌলিক লজিক গেট কয়টি?", o: ["দুইটি", "তিনটি", "চারটি", "পাঁচটি"], a: "খ",
