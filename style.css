@@ -110,16 +110,6 @@ code{font-family:var(--mono)}
 .tbtn:hover{color:var(--ink);text-decoration-color:currentColor}
 .tbtn:disabled{opacity:.35;cursor:default;text-decoration:none}
 
-/* ---------- demo strip (remove with real content) ---------- */
-.demo{background:var(--ink);color:var(--paper);font-size:13px}
-.demo .wrap{display:flex;align-items:center;gap:14px;height:32px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
-.demo .wrap::-webkit-scrollbar{display:none}
-.demo b{font-weight:600;font-stretch:90%}
-.demo nav{display:flex;gap:14px;margin-left:auto}
-.demo a{text-decoration:none;opacity:.8}
-.demo a:hover,.demo a[aria-current]{opacity:1;text-decoration:underline;text-decoration-color:currentColor}
-@media (max-width:719px){.demo-what{display:none}.demo nav{margin-left:0}}
-
 /* ---------- top bar ---------- */
 .top{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
 .top .wrap{display:flex;align-items:center;gap:20px;height:58px}
@@ -439,6 +429,16 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .note-links li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 18px;padding:12px 0;border-bottom:1px solid var(--rule)}
 .note-links a{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--form-ink)}
 .note-links span{font-size:13.5px;color:var(--ink-3)}
+/* The end of a note: the previous chapter on the left, the next on the right. */
+.chpager{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.chp{display:flex;flex-direction:column;gap:3px;padding:10px 0 4px;color:var(--ink);text-decoration:none}
+.chp.nx{grid-column:2;align-items:flex-end;text-align:right}
+.chp small{font-size:13.5px;color:var(--ink-3)}
+.chp b{font-family:var(--serif);font-weight:400;font-size:20px;line-height:1.45;color:var(--form-ink)}
+.chp span{font-size:13.5px;color:var(--ink-3)}
+a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
+.chp.soon b{color:var(--ink-3)}
+@media (max-width:719px){.chp b{font-size:17.5px}}
 .note .work+.work,.note .groups+.groups{margin-top:26px}
 .note .truth{margin:6px 0 14px}
 .note .bcalc{margin-top:12px}
@@ -469,6 +469,12 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .grid-hint{display:none}
 @media (max-width:719px){.grid-hint{display:inline}}
 .omrgrid td.n small{font-size:11.5px;color:var(--ink-3)}
+/* A filled bubble can be tapped (its whole cell counts); the chosen one gets a ring, and its questions show under the map. */
+.omrgrid td.hit{cursor:pointer}
+.omrgrid button.bub{cursor:pointer}
+.omrgrid td.hit:hover .bub:not(.sel){outline:1.5px solid var(--rule-2);outline-offset:2px}
+.omrgrid .bub.sel{outline:2px solid var(--form);outline-offset:2px}
+.omr-read .prev-h{margin-top:18px}
 /* A dated list down a rule, each date on a bubble */
 .tl{list-style:none;margin:8px 0 0 6px;padding:0;border-left:1.5px solid var(--ink)}
 .tl li{position:relative;display:grid;grid-template-columns:7.2em minmax(0,1fr);gap:2px 14px;padding:9px 0 9px 20px;border-bottom:1px solid var(--rule)}
@@ -949,6 +955,7 @@ body[data-screen="exam"] .top{display:none}
     padding:8px var(--gut) calc(8px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--ink)}
   .ebot .tbtn{justify-self:start;min-height:44px}
   .ebot .tbtn:last-child{justify-self:end}
+  .ebot .tbtn[data-submit]{color:var(--primary-text);font-weight:600}
   .sheetbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--form);border-radius:22px;background:var(--sheet);color:var(--form-ink);font-size:15px;cursor:pointer}
   .sheetbtn b{font-weight:500;color:var(--ink)}
   .qno{font-size:50px}
@@ -1037,7 +1044,7 @@ body[data-screen="exam"] .top{display:none}
 
 /* ---------- daily password ---------- */
 /* While <html> has class "locked", only the password screen exists on screen; the app draws nothing behind it. */
-html.locked .demo,html.locked .top,html.locked #view,html.locked .toast{display:none !important}
+html.locked .top,html.locked #view,html.locked .toast{display:none !important}
 html:not(.locked) .gate{display:none}
 .gate{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 .gate-bar{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
@@ -1126,4 +1133,4 @@ body[data-screen="exam"] .fab,html.locked .fab{display:none}
   *,*::before,*::after{transition:none !important;animation:none !important}
   .score path{stroke-dashoffset:0}
 }
-@media print{.demo,.top,.secbar,.switch,.reveal,.ebot{display:none !important}body{background:#fff}}
+@media print{.top,.secbar,.switch,.reveal,.ebot{display:none !important}body{background:#fff}}

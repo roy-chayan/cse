@@ -30,6 +30,13 @@ const QS = CH.flatMap(ch => ch.questions.map((q, i) =>
   ({ ...q, id: `${ch.id}-${i + 1}`, n: i + 1, c: ch.id, a: typeof q.a === "string" ? LETTER.indexOf(q.a) : q.a })));
 const QBY = Object.fromEntries(QS.map(q => [q.id, q]));
 const chapterOf = id => CH.find(c => c.id === id);
+// Every chapter of the syllabus (mcq/chapters.js), in order, whether or not its questions are in yet.
+// A chapter file missing from that list still counts.
+const allChapters = () => {
+  const list = (window.ICT_CHAPTERS || []).slice();
+  CH.forEach(ch => { if (!list.some(c => c.id === ch.id)) list.push(ch); });
+  return list.sort((x, y) => x.no - y.no);
+};
 const inExam = q => !q.noExam;                     // a question with two correct options is read, not tested
 /* A digital signal drawn as a square wave, one step per bit (1 = high), for questions that ask to read one. */
 const wave = bits => {
@@ -78,10 +85,10 @@ document.addEventListener("keydown", e => {
 }, true);
 
 let toastTimer = 0;
-function toast(msg) {
+function toast(msg, ms = 2800) {
   const t = $("#toast");
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2800);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), ms);
 }
 
 /* C code colouring: keywords, strings, comments, preprocessor lines. */
@@ -106,9 +113,7 @@ function home() {
   // Every chapter of the syllabus, in order (mcq/chapters.js). An added chapter links to its MCQs, with its
   // question count and a dot for how much of it has come up in exams; the rest show "শিগগির".
   const stats = getStats();
-  const list = (window.ICT_CHAPTERS || []).slice();
-  CH.forEach(ch => { if (!list.some(c => c.id === ch.id)) list.push(ch); });   // a chapter file missing from the list still shows
-  list.sort((x, y) => x.no - y.no);
+  const list = allChapters();
   const left = list.length - list.filter(c => chapterOf(c.id)).length;
   $("#tocLede").textContent = `শিক্ষক নিবন্ধন, সহকারী শিক্ষক (আইসিটি), বিষয় কোড ৩১৩-এর সিলেবাস ধরে ${bn(list.length)}টি অধ্যায়। ` +
     (CH.length ? `এখন পর্যন্ত ${bn(CH.length)}টি অধ্যায়ে মোট ${bn(QS.length)}টি প্রশ্ন, উত্তর ও ব্যাখ্যাসহ${left ? `; বাকি ${bn(left)}টি একে একে যোগ হবে` : ""}।` : "প্রশ্ন একে একে যোগ হবে।");
@@ -181,6 +186,21 @@ function note(id, section) {
     const a = e.target.closest(`a[href^="#/note/${key}/"]`);
     if (a && !a.closest("#secnav") && scrollToLink(a)) e.preventDefault();
   });
+
+  // At the end: the chapters before and after this one. A chapter whose note isn't written yet opens its MCQs;
+  // one with neither shows "শিগগির" and isn't a link.
+  const chs = allChapters(), at = chs.findIndex(c => c.id === n.ch);
+  const noteOf = id => Object.keys(NOTES).find(k => NOTES[k].ch === id);
+  const side = (c, next) => {
+    if (!c) return "";
+    const k = noteOf(c.id), href = k ? `#/note/${k}` : chapterOf(c.id) ? `#/mcq/${c.id}` : "";
+    const inner = `<small>${next ? "পরের অধ্যায় →" : "← আগের অধ্যায়"}</small><b>${bn(c.no)}. ${esc(c.name)}</b>` +
+      `<span>${k ? "নোট" : href ? "MCQ · নোট শিগগির" : "শিগগির"}</span>`;
+    const cls = `chp${next ? " nx" : ""}`;
+    return href ? `<a class="${cls}" href="${href}">${inner}</a>` : `<span class="${cls} soon">${inner}</span>`;
+  };
+  if (at >= 0) $(".note .doc").insertAdjacentHTML("beforeend", `<nav class="blk chnav" aria-label="অধ্যায় বদলান">
+    <p class="blk-no">অধ্যায়</p><div class="body chpager">${side(chs[at - 1], false)}${side(chs[at + 1], true)}</div></nav>`);
   setupSectionBar();
   if (section && document.getElementById(section)) scrollOnOpen(section);
 }
@@ -225,10 +245,29 @@ function renderPrev(chId) {
     <thead><tr><th scope="col">অংশ</th><th scope="col" class="n">মোট</th>${P.exams.map(ex => `<th scope="col"><b>${bn(ex.no)}</b><small>${bn(String(ex.year).slice(2))}</small></th>`).join("")}</tr></thead>
     <tbody>${counted.map(r => `<tr><th scope="row"><a href="#/note/${Object.keys(NOTES).find(k => NOTES[k].ch === chId)}/${r.sec}">${esc(r.name)}</a></th>` +
       `<td class="n">${bn(r.n)}<small>/${bn(P.exams.length)}</small></td>` +
-      P.exams.map(ex => { const h = hits(r.id, ex.no); return `<td>${h.length ? `<i class="bub on" title="${esc(tag(ex.no))}: ${esc(h.map(x => x.q.replace(/<[^>]+>/g, "")).join(" | "))}"></i>` : `<i class="bub" aria-label="আসেনি"></i>`}</td>`; }).join("") +
+      P.exams.map(ex => { const h = hits(r.id, ex.no); return h.length
+        ? `<td class="hit"><button type="button" class="bub on" data-t="${esc(r.id)}" data-e="${ex.no}" aria-label="${esc(tag(ex.no))}: ${esc(r.name)}"` +
+          ` title="${esc(tag(ex.no))}: ${esc(h.map(x => x.q.replace(/<[^>]+>/g, "")).join(" | "))}"></button></td>`
+        : `<td><i class="bub" aria-label="আসেনি"></i></td>`; }).join("") +
       `</tr>`).join("")}</tbody></table>`;
   const top = counted.slice().sort((a, b) => b.n - a.n).slice(0, 3);
   if ($("#prevTop")) $("#prevTop").innerHTML = top.map(r => `<b>${esc(r.name)}</b> (${bn(r.n)}টি পরীক্ষায়)`).join(", ");
+
+  // A tap on a filled bubble (anywhere in its cell, as the bubbles are small on a phone) shows that exam's
+  // questions on this part just under the map. Hovering with a mouse still shows them as a tooltip too.
+  const fig = grid.closest("figure") || grid;
+  fig.insertAdjacentHTML("afterend", `<div class="omr-read" id="prevRead" aria-live="polite" hidden></div>`);
+  const read = $("#prevRead");
+  grid.onclick = e => {
+    const b = e.target.closest("td.hit")?.querySelector("button"); if (!b) return;
+    const r = counted.find(x => x.id === b.dataset.t), no = Number(b.dataset.e);
+    const year = bn((P.exams.find(x => x.no === no) || {}).year || "");
+    $$(".bub.sel", grid).forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel");
+    read.innerHTML = `<p class="prev-h">${ord(no)} পরীক্ষা, ${year} <span>${esc(r.name)}</span></p><ol class="prev">${hits(r.id, no).map(li).join("")}</ol>`;
+    read.hidden = false;
+    read.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
 }
 
 /* "উত্তর লুকান": answers stay hidden until each one is revealed. Remembered between visits. */
@@ -302,7 +341,7 @@ function setupSectionBar(sections = ".blk") {
       if (a) mark(a);
     });
   }, { rootMargin: "-30% 0px -60% 0px" });
-  $$(sections).forEach(s => spy.observe(s));
+  $$(sections).filter(s => s.id).forEach(s => spy.observe(s));   // only parts the bar links to (not the chapter links at the end)
 }
 
 
@@ -619,8 +658,6 @@ function startExam(opts) {
 const saveExam = () => store.set("exam", exam);
 
 function examView(arg) {
-  // "#/exam/new" (the demo strip) starts a sample exam; the address is then swapped for "#/exam", so a reload resumes it.
-  if (arg === "new") { exam = newExam(); saveExam(); return location.replace("#/exam"); }
   exam = exam || store.get("exam", null);
   // Nothing running (e.g. Back from a result): go to the setup form instead of starting an exam nobody asked for.
   if (!validRecord(exam)) {
@@ -654,7 +691,7 @@ function examView(arg) {
     <nav class="ebot" aria-label="প্রশ্ন বদলান">
       <button class="tbtn" type="button" data-go="-1">← আগের</button>
       <button class="sheetbtn" type="button" id="sheetBtn" aria-expanded="false">উত্তরপত্র <b id="sheetBtnCount"></b></button>
-      <button class="tbtn" type="button" data-go="1">পরের →</button>
+      <button class="tbtn" type="button" data-go="1" id="ebNext">পরের →</button>
     </nav>
   </div>`;
 
@@ -672,7 +709,7 @@ function examView(arg) {
 }
 
 function renderQuestion(popIndex) {
-  const q = QBY[exam.order[exam.cur]], chosen = exam.ans[exam.cur], n = exam.order.length;
+  const q = QBY[exam.order[exam.cur]], chosen = exam.ans[exam.cur], n = exam.order.length, last = exam.cur === n - 1;
   $("#qNo").textContent = bn(exam.cur + 1);
   $("#qpane").innerHTML = `
     <div class="qhead"><span class="qno">${bn(pad2(exam.cur + 1))}</span><span class="qsubj">${esc(chapterOf(q.c).name)}</span>${exam.flag[exam.cur] ? '<span class="qflag">পরে দেখবেন</span>' : ""}</div>
@@ -684,10 +721,14 @@ function renderQuestion(popIndex) {
     <div class="qact">
       <button class="btn line sm prev" type="button" data-go="-1"${exam.cur === 0 ? " disabled" : ""}>← আগের</button>
       <button class="tbtn" type="button" data-flag>${exam.flag[exam.cur] ? "চিহ্ন তুলে দিন" : "পরে দেখব"}</button>
-      <button class="btn sm next" type="button" data-go="1"${exam.cur === n - 1 ? " disabled" : ""}>পরের →</button>
+      ${last ? `<button class="btn sm next" type="button" data-submit>জমা দিন</button>` : `<button class="btn sm next" type="button" data-go="1">পরের →</button>`}
     </div>
     <div class="qquit">${autoSwitch()}<button class="tbtn" type="button" data-quit>পরীক্ষা বাতিল করুন</button></div>`;
-  $$(".ebot [data-go]").forEach(b => (b.disabled = (b.dataset.go === "-1" && exam.cur === 0) || (b.dataset.go === "1" && exam.cur === n - 1)));
+  // On the last question, "পরের" (here and in the phone's bottom bar) becomes "জমা দিন".
+  $(".ebot [data-go='-1']").disabled = exam.cur === 0;
+  const fwd = $("#ebNext");
+  fwd.textContent = last ? "জমা দিন" : "পরের →";
+  fwd.toggleAttribute("data-submit", last);
   renderSheet();
 }
 
@@ -733,7 +774,7 @@ function choose(qi, opt, onScreen) {
   saveExam();
   if (qi === exam.cur) renderQuestion(exam.ans[qi] === null ? undefined : opt); else renderSheet();
   if (!onScreen || !autoNext() || qi !== exam.cur || exam.ans[qi] === null) return;
-  if (qi === exam.order.length - 1) return toast("এটিই শেষ প্রশ্ন। উত্তরপত্র দেখে জমা দিন।");
+  if (qi === exam.order.length - 1) return toast("এটিই শেষ প্রশ্ন। উত্তরপত্র দেখে নিয়ে “জমা দিন” চাপুন।");
   autoTimer = setTimeout(() => { if (exam && document.body.dataset.screen === "exam" && exam.cur === qi) go(1); }, 350);
 }
 function go(step) {
@@ -775,20 +816,38 @@ function tick() {
   $("#clock").innerHTML = [...bn(`${pad2(Math.floor(left / 60))}:${pad2(left % 60)}`)]
     .map(c => (c === ":" ? '<span class="colon">:</span>' : `<span class="d">${c}</span>`)).join("");
   $("#clock").classList.toggle("low", left <= Math.min(300, exam.mins * 12));
-  if (left <= 0) finish(true);
+  if (left <= 0) return finish(true);
+  timeWarning(left);
+}
+
+/* A warning at 5 minutes left and again at 1 minute: a message, and a short buzz on phones that allow it.
+   Each comes once per exam (remembered with the exam, so a reload doesn't repeat it), and only in an exam at least
+   twice that long: a 6-minute exam gets no "5 minutes left". Coming back to an exam after both marks have passed
+   shows only the later one, with the real minutes left. */
+const WARN_AT = [300, 60];
+function timeWarning(left) {
+  const due = WARN_AT.filter(s => left <= s && exam.mins * 60 >= s * 2 && !(exam.warned || []).includes(s));
+  if (!due.length) return;
+  exam.warned = [...(exam.warned || []), ...due]; saveExam();
+  const mins = bn(Math.max(1, Math.ceil(left / 60)));
+  toast(left <= 60 ? `আর ${mins} মিনিট বাকি। সময় শেষ হলে উত্তরপত্র নিজে থেকেই জমা হয়ে যাবে।` : `আর ${mins} মিনিট বাকি।`, 6000);
+  // A phone may buzz only after the page has been tapped; asking earlier just logs an error.
+  try { if (navigator.vibrate && navigator.userActivation?.hasBeenActive !== false) navigator.vibrate(200); } catch (e) {}
 }
 
 let finishing = false;
-async function finish(timeUp) {
+/* alwaysAsk: the "জমা দিন" that replaces "পরের" on the last question asks even when every question is answered,
+   because a reader tapping "পরের" through the paper could otherwise hand it in by mistake. */
+async function finish(timeUp, alwaysAsk = false) {
   if (!exam) return;
   if (timeUp && asking) asking(false);              // time ran out while the "submit anyway?" box was open
   if (!timeUp) {
     if (finishing) return;
     const empty = exam.ans.filter(a => a === null).length, flagged = exam.flag.filter(Boolean).length;
     const msg = [empty && `${bn(empty)}টি প্রশ্নের উত্তর দেননি`, flagged && `${bn(flagged)}টি “পরে দেখব” চিহ্নিত`].filter(Boolean).join(", ");
-    if (msg) {
+    if (msg || alwaysAsk) {
       finishing = true;
-      const ok = await ask(`${msg}। তবুও জমা দেবেন?`, "জমা দিন", "ফিরে যান");
+      const ok = await ask(msg ? `${msg}। তবুও জমা দেবেন?` : "সব প্রশ্নের উত্তর দিয়েছেন। এখন জমা দেবেন?", "জমা দিন", "ফিরে যান");
       finishing = false;
       if (!ok || !exam) return;
     }
@@ -805,6 +864,7 @@ async function finish(timeUp) {
   store.set("last", { title: exam.title, order: exam.order, ans: exam.ans, flag: exam.flag, neg: exam.neg, mins: exam.mins,
     secs: Math.round((Math.min(Date.now(), exam.end) - exam.start) / 1000) });
   exam = null; store.del("exam");
+  clearTimeout(toastTimer); $("#toast").hidden = true;   // a time warning doesn't follow onto the result
   location.replace("#/result");                      // the result takes the exam's place, so Back doesn't return to it
 }
 
@@ -815,6 +875,7 @@ view.addEventListener("click", e => {
   const opt = t.closest("[data-opt]"); if (opt) return choose(exam.cur, Number(opt.dataset.opt), true);
   const bub = t.closest("#omr .bub"); if (bub) return choose(Number(bub.dataset.q), Number(bub.dataset.i));
   const j = t.closest("[data-jump]"); if (j) return jump(Number(j.dataset.jump));
+  if (t.closest("[data-submit]")) return finish(false, true);   // the last question's "জমা দিন" (it sits where "পরের" was)
   const g = t.closest("[data-go]"); if (g) return go(Number(g.dataset.go));
   if (t.closest("[data-flag]")) { exam.flag[exam.cur] = !exam.flag[exam.cur]; saveExam(); return renderQuestion(); }
   if (t.closest("#submitBtn")) return finish(false);
@@ -888,9 +949,8 @@ function result() {
         <div class="res-acts">
           ${retry.length
             ? `<button class="btn" type="button" id="retryBtn">ভুলগুলো আবার দিন <span class="cnt">${bn(retry.length)}টি প্রশ্ন</span></button>
-               <button class="btn line" type="button" id="shareBtn">বন্ধুকে একই পরীক্ষা পাঠান</button>`
-            : `<p class="allright">সব উত্তর ঠিক।</p><button class="btn" type="button" id="shareBtn">বন্ধুকে একই পরীক্ষা পাঠান</button>`}
-          <a class="tbtn" href="#/setup">নতুন পরীক্ষা</a>
+               <a class="tbtn" href="#/setup">নতুন পরীক্ষা</a>`
+            : `<p class="allright">সব উত্তর ঠিক।</p><a class="btn" href="#/setup">নতুন পরীক্ষা দিন</a>`}
         </div>
       </div>
     </section>
@@ -937,7 +997,6 @@ function result() {
     $("#review").innerHTML = items || '<p class="empty">এখানে কিছু নেই।</p>';
   }
   $("#filters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; renderReview(); } };
-  $("#shareBtn").onclick = () => toast("ডেমো: আসল সাইটে এখানে লিংক তৈরি হয়ে Messenger বা WhatsApp-এ পাঠানো যাবে।");
   // Retest only this exam's wrong and skipped questions, at the real exam's pace.
   if ($("#retryBtn")) $("#retryBtn").onclick = async () => {
     if (!(await okToReplace())) return;
@@ -959,7 +1018,6 @@ function route() {
   // Top links (computers, tablets) and the bottom tab bar (phones) mark the same section. A note belongs to সূচি.
   const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", setup: "setup", exam: "setup", result: "setup" }[screen];
   $$(".nav a, .tabbar a").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === section));
-  $$(".demo nav a").forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href").split("/")[1] === (location.hash.split("/")[1] || "")));
   if (!sub) window.scrollTo(0, 0);
   // Floating shortcuts: home everywhere but home; lifted over the exam form's sticky summary.
   $("#toHome").hidden = screen === "";
