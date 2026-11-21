@@ -1148,7 +1148,7 @@
     <p class="crumb"><a href="#/">সূচিপত্র</a><i aria-hidden="true">/</i>অধ্যায় ৩</p>
     <h1>উপাত্ত উপস্থাপন</h1>
     <p class="doc-lede">উপাত্ত ও তথ্য, উপাত্ত প্রক্রিয়াকরণ, আর কম্পিউটারে অঙ্ক ও বর্ণ রাখার কোড: BCD, ASCII, EBCDIC। প্রতিটি অংশের সঙ্গে ২০০৬ থেকে ২০২৪ পর্যন্ত লিখিত পরীক্ষায় সেই অংশ থেকে আসা সব প্রশ্ন।</p>
-    <p class="doc-meta"><span>অংশ <b>৪</b></span><span>বিগত লিখিত প্রশ্ন <b id="prevCount"></b></span><span>MCQ <b>শিগগির</b></span><span>পড়তে <b>২০ মিনিট</b></span></p>
+    <p class="doc-meta"><span>অংশ <b>৪</b></span><span>বিগত লিখিত প্রশ্ন <b id="prevCount"></b></span><span>MCQ <b id="noteMcq"></b></span><span>পড়তে <b>২০ মিনিট</b></span></p>
   </header>
 
   <div class="secbar"><div class="wrap">
@@ -1173,7 +1173,7 @@
         <p class="tip"><b>সবচেয়ে বেশি এসেছে:</b> <span id="prevTop"></span>। “উপাত্ত ও তথ্যের পার্থক্য” আর “BCD ও বাইনারির পার্থক্য” প্রায় নিশ্চিত ৫ নম্বর; ছক দুটি মুখস্থ রাখুন।</p>
       </div>
       <aside class="side">
-        <p><b>এই অধ্যায়ের MCQ</b>শিগগির যোগ হবে। ততক্ষণ নোট আর লিখিত প্রশ্ন দিয়ে প্রস্তুতি নিন।</p>
+        <p><b>এই অধ্যায়ের MCQ</b>প্রতিটি অংশের শেষে সেই অংশের MCQ অনুশীলন; পুরো অধ্যায়ের প্রশ্ন উত্তর ও ব্যাখ্যাসহ <a href="#/mcq/ch03">তালিকায়</a>।</p>
       </aside>
     </section>
 
@@ -1207,6 +1207,7 @@
         <p class="prose">একই জিনিস একজনের কাছে তথ্য, আরেকজনের কাছে উপাত্ত। একটি স্কুলের পাসের হার স্কুলটির কাছে প্রক্রিয়াজাত তথ্য; কিন্তু শিক্ষা বোর্ড সব স্কুলের পাসের হার নিয়ে আবার প্রক্রিয়া করে জেলার ফল বের করে, তখন সেটিই বোর্ডের কাছে উপাত্ত। এক ধাপের আউটপুট পরের ধাপের ইনপুট হয়, তাই কোনটি উপাত্ত আর কোনটি তথ্য, তা নির্ভর করে কে, কী উদ্দেশ্যে ব্যবহার করছে তার ওপর।</p>
 
         <div data-prev="data"></div>
+        <p class="practice"><button class="btn line sm" type="button" data-practice="1-7,9,10" data-name="উপাত্ত ও তথ্য">এই অংশের MCQ অনুশীলন <span></span></button><a href="#/mcq/ch03/q1">তালিকায় পড়ুন →</a></p>
       </div>
       <aside class="side">
         <p><b>নম্বর পেতে</b>পার্থক্যের প্রশ্নে অন্তত পাঁচটি সারির ছক দিন, আর শেষে একটি উদাহরণে দেখান কীভাবে উপাত্ত তথ্যে বদলায়।</p>
@@ -1255,6 +1256,7 @@
         <p class="prose">উপাত্ত প্রক্রিয়াকরণে মানুষ বিচার-বুদ্ধি দিয়ে নতুন পরিস্থিতিতে সিদ্ধান্ত নিতে পারে, কিন্তু ধীর ও ক্লান্তিপ্রবণ; কম্পিউটার দ্রুত, নির্ভুল ও ক্লান্তিহীন, কিন্তু প্রোগ্রামের বাইরে কিছু ভাবতে পারে না। তুলনার পুরো ছক আছে <a href="#/note/computer-basics/def">অধ্যায় ১ · মানুষ ও কম্পিউটার</a> অংশে।</p>
 
         <div data-prev="proc"></div>
+        <p class="practice"><button class="btn line sm" type="button" data-practice="8,11-20,29,30" data-name="উপাত্ত প্রক্রিয়াকরণ">এই অংশের MCQ অনুশীলন <span></span></button><a href="#/mcq/ch03/q11">তালিকায় পড়ুন →</a></p>
       </div>
       <aside class="side">
         <p><b>ধাপ লিখতে</b>ছয়টি ধাপ ক্রম ধরে লিখুন, প্রতিটির পাশে একটি উদাহরণ (যেমন পরীক্ষার ফল তৈরি) দিলে উত্তর গোছানো দেখায়।</p>
@@ -1312,7 +1314,20 @@
         </table>
         <p class="prose">উদাহরণসহ পুরো উত্তর আছে <a href="#/written/18-school/q7">১৮তম লিখিত প্রশ্ন ৭-এ</a>।</p>
 
+        <h3 class="sub"><span>৩.৪</span>বিট, নিবল, বাইট ও ওয়ার্ড</h3>
+        <table class="rt cmp">
+          <thead><tr><th>একক</th><th>কত বিট</th><th>কী বোঝায়</th></tr></thead>
+          <tbody>
+            <tr><td>বিট (Binary Digit)</td><td>১</td><td>০ অথবা ১; উপাত্তের ক্ষুদ্রতম একক</td></tr>
+            <tr><td>নিবল</td><td>৪</td><td>অর্ধেক বাইট; একটি হেক্সাডেসিমাল বা BCD অঙ্ক</td></tr>
+            <tr><td>বাইট</td><td>৮</td><td>সাধারণত একটি অক্ষর বা চিহ্ন</td></tr>
+            <tr><td>ওয়ার্ড</td><td>৮, ১৬, ৩২ বা ৬৪</td><td>CPU একবারে যত বিট প্রক্রিয়া করে; CPU-র আর্কিটেকচারের ওপর নির্ভর করে</td></tr>
+          </tbody>
+        </table>
+        <p class="prose">বড় এককগুলো ১০২৪ গুণ করে বাড়ে: ১০২৪ বাইট = ১ কিলোবাইট (KB), ১০২৪ KB = ১ মেগাবাইট (MB), তারপর GB ও TB। আর গ্রে কোডে পরপর দুটি সংখ্যার মধ্যে মাত্র একটি বিট বদলায়; এটি ওজনবিহীন সংখ্যাসূচক কোড, তাই হিসাবে নয়, সংকেত পাঠানোয় ব্যবহৃত হয়।</p>
+
         <div data-prev="code"></div>
+        <p class="practice"><button class="btn line sm" type="button" data-practice="21-28,31,32,37-40,44,45" data-name="কোড ও BCD">এই অংশের MCQ অনুশীলন <span></span></button><a href="#/mcq/ch03/q21">তালিকায় পড়ুন →</a></p>
       </div>
       <aside class="side">
         <p><b>ফাঁদ</b>(BCD)<sub>16</sub>-এর মতো প্রশ্নে BCD কোনো কোড নয়, হেক্সাডেসিমাল সংখ্যা: B, C, D তিনটি অঙ্ক। সেটি অধ্যায় ২-এর রূপান্তর।</p>
@@ -1362,6 +1377,7 @@
         <p class="prose">ASCII-তে শুধু ইংরেজি বর্ণ ধরে, বাংলা বা অন্য ভাষার জায়গা নেই। ইউনিকোড শুরুতে ১৬ বিটের (২<sup>১৬</sup> = ৬৫,৫৩৬টি অক্ষর) কোড, এখন ১১ লক্ষের বেশি অক্ষর রাখতে পারে; পৃথিবীর প্রায় সব ভাষা এতে আছে। বাংলা বর্ণের ইউনিকোড পরিসর U+0980 থেকে U+09FF। এর প্রথম ১২৮টি অক্ষর হুবহু ASCII-র মতো।</p>
 
         <div data-prev="ascii"></div>
+        <p class="practice"><button class="btn line sm" type="button" data-practice="33-36,41-43,46-57" data-name="ASCII ও EBCDIC">এই অংশের MCQ অনুশীলন <span></span></button><a href="#/mcq/ch03/q33">তালিকায় পড়ুন →</a></p>
       </div>
       <aside class="side">
         <p><b>পূর্ণরূপ লিখুন</b>প্রশ্নে প্রায়ই আসে: ASCII, EBCDIC, BCD, এবং কত বিট ও কতটি অক্ষর।</p>
@@ -1373,7 +1389,8 @@
       <p class="blk-no">অনুশীলন</p>
       <div class="body">
         <h2>এবার নিজে করুন</h2>
-        <p class="prose">এই অধ্যায়ের MCQ শিগগির যোগ হবে। ততক্ষণ ওপরের প্রতিটি অংশের বিগত প্রশ্ন থেকে প্রতিদিন একটি খাতায় লিখুন; পার্থক্যের প্রশ্নগুলো ছক করে।</p>
+        <p class="prose">এই অধ্যায়ের সব MCQ উত্তর ও ব্যাখ্যাসহ পড়ুন, অথবা সময় ধরে পরীক্ষা দিন। আর ওপরের প্রতিটি অংশের বিগত প্রশ্ন থেকে প্রতিদিন একটি খাতায় লিখুন; পার্থক্যের প্রশ্নগুলো ছক করে।</p>
+        <p class="note-acts"><a class="btn" href="#/mcq/ch03">অধ্যায়ের MCQ পড়ুন <span aria-hidden="true">→</span></a><a class="btn line" href="#/setup/ch03">এই অধ্যায়ে পরীক্ষা দিন</a></p>
         <ul class="note-links">
           <li><a href="#/written/18-school/q7">কোড কী, BCD ও বাইনারি কোডের পার্থক্য</a><span>১৮তম লিখিত · প্রশ্ন ৭</span></li>
           <li><a href="#/note/number-system/between">হেক্সা, অক্টাল ও বাইনারির রূপান্তর</a><span>অধ্যায় ২ · নোট</span></li>
@@ -2206,11 +2223,19 @@ C:\&gt; COPY NOTE.TXT D:\</pre>
 <script src="answers/16-school.js"></script>
 <script src="answers/15-school.js"></script>
 <script src="answers/14-school.js"></script>
+<script src="answers/13-school.js"></script>
+<script src="answers/12-school.js"></script>
+<script src="answers/11-school.js"></script>
 <!-- Chapter-wise MCQs: one file per chapter, in any order (they are sorted by chapter number). -->
 <script src="mcq/chapters.js"></script>
 <script src="mcq/written-prev.js"></script>
 <script src="mcq/ch01.js"></script>
 <script src="mcq/ch02.js"></script>
+<script src="mcq/ch03.js"></script>
+<script src="mcq/ch04.js"></script>
+<script src="mcq/ch05.js"></script>
+<script src="mcq/ch06.js"></script>
+<script src="mcq/ch07.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

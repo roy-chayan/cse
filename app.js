@@ -327,8 +327,10 @@ const writtenAnswer = (paper, n) => {
 /* <div data-include="wa-18-school-2" data-part="2" data-inner>: an earlier answer to the same question, reused.
    data-part picks one part, else the whole body. data-inner: the slot already sits under its own heading, so each
    borrowed part drops its heading; when several parts come, each heading turns into a sub-heading with its marks. */
-function fillIncludes(box) {
-  $$("[data-include]", box).forEach(slot => {
+function fillIncludes(box, depth = 0) {
+  const slots = $$("[data-include]", box);
+  if (!slots.length || depth > 3) return;
+  slots.forEach(slot => {
     const m = slot.dataset.include.match(/^wa-(.*)-(\d+)$/);
     const src = m && writtenAnswer(m[1], Number(m[2])), body = src && src.content.querySelector(".ans-body");
     if (!body) return slot.remove();
@@ -346,6 +348,7 @@ function fillIncludes(box) {
       return kids;
     }));
   });
+  fillIncludes(box, depth + 1);   // a reused answer may itself reuse another one
 }
 /* A written question as printed: plain text, or parts (ক, খ …) with their own marks; then its "অথবা" choice(s). */
 const wParts = x => typeof x === "string" ? `<p>${x}</p>`
