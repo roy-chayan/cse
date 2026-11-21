@@ -152,7 +152,8 @@ function home() {
 const NOTES = {
   "computer-basics": { tpl: "t-note-ch01", ch: "ch01" },
   "number-system": { tpl: "t-note", ch: "ch02" },
-  "data-representation": { tpl: "t-note-ch03", ch: "ch03" }
+  "data-representation": { tpl: "t-note-ch03", ch: "ch03" },
+  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" }
 };
 
 function note(id, section) {

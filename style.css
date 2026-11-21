@@ -335,6 +335,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .expand>span:first-child{color:var(--ink-2)}
 .tip{margin:22px 0 0;padding:2px 0 2px 16px;border-left:3px solid var(--hl);font-family:var(--serif);font-size:18px;line-height:1.75;max-width:36em}
 .tip b{font-weight:400;color:var(--form-ink)}
+.tip+.prose{margin-top:18px}
 .handsum{display:grid;grid-template-columns:auto 1fr;justify-content:start;gap:4px 26px;align-items:baseline;margin:6px 0 0}
 .handsum code{font-size:23px;letter-spacing:.32em;text-align:right;white-space:pre}
 .handsum span{font-size:15px;color:var(--ink-2)}
@@ -629,7 +630,7 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .part-h>span{flex:1;min-width:0}
 .part-h .mk{--s:36px;font-size:16px;font-weight:600;border-width:1.5px}
 .sub-h{display:flex;align-items:baseline;gap:10px;margin:24px 0 8px;font-family:var(--serif);font-weight:400;font-size:18.5px;line-height:1.5}
-.sub-h>span:first-child{font-family:var(--sans);font-size:13.5px;color:var(--form-ink)}
+.sub-h>span:first-child{font-family:var(--sans);font-size:13.5px;color:var(--form-ink);white-space:nowrap}
 .wq-ans .work,.wq-ans .groups{margin-bottom:18px}
 .defn{margin:0 0 14px;padding:12px 16px;background:var(--sheet);border-left:3px solid var(--form);font-family:var(--serif);font-size:18px;line-height:1.8}
 .defn b{display:block;margin-bottom:2px;font-family:var(--sans);font-weight:500;font-size:13px;color:var(--form-ink)}
@@ -660,6 +661,14 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .gates{display:flex;flex-wrap:wrap;align-items:center;gap:14px 36px;margin:18px 0 16px}
 .gate-sym{margin:0;width:190px}
 .gate-sym.circ{width:220px}                   /* switch-and-lamp circuits of the basic gates */
+.gate-sym.duo{width:300px;max-width:100%}     /* two gates in a row, e.g. OR then NOT */
+.fig.wide.tight svg{min-width:320px;max-width:420px}   /* a small circuit that fits a phone without scrolling */
+.eqtab td.m{white-space:nowrap}               /* short formulas ("Y = A + B") stay on one line */
+/* A circuit whose wires carry full expressions with stacked bars: the labels are HTML inside the drawing,
+   so .ov works there too. Slightly wider than a phone, so it scrolls a little rather than shrink the bars. */
+.fig.wide.labels svg{min-width:440px;max-width:520px}
+.fig.eqfig svg{width:auto;max-width:100%}      /* a small labelled circuit: its own width attribute, never wider than the column */
+.fig .flab{display:inline-block;font-family:var(--mono);font-size:13px;line-height:1.15;white-space:nowrap;color:currentColor}
 .truth{border-collapse:collapse;font-family:var(--mono);font-size:15px}
 .truth th,.truth td{padding:5px 14px;text-align:center;border-bottom:1px solid var(--rule)}
 .truth th{font-family:var(--sans);font-weight:500;font-size:13px;color:var(--ink-3);border-bottom-color:var(--ink)}
