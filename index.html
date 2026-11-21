@@ -90,6 +90,16 @@
   <a href="#/mcq" data-nav="mcq"><i class="bub" aria-hidden="true"></i><span>প্রশ্ন</span></a>
   <a href="#/setup" data-nav="setup"><i class="bub" aria-hidden="true"></i><span>পরীক্ষা</span></a>
 </nav>
+<!-- Bottom right, on every screen but the exam: back to the top (once the page has scrolled), and home (on every other screen).
+     Phones already have home in the tab bar, so there only the up button shows, just above it. -->
+<div class="fab" id="fab">
+  <button class="fab-b" id="toTop" type="button" aria-label="পাতার ওপরে যান" title="ওপরে যান">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 16.5V4M4.5 9.5L10 4l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+  </button>
+  <a class="fab-b" id="toHome" href="#/" aria-label="হোমে ফিরুন" title="হোমে ফিরুন">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.8 9.6L10 3.4l7.2 6.2M5 7.9v8.6h3.8v-4.8h2.4v4.8H15V7.9" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+  </a>
+</div>
 <div class="toast" id="toast" role="status" hidden></div>
 <!-- The yes/no box (see ask() in app.js). -->
 <div class="modal" id="modal" hidden>
@@ -1391,6 +1401,8 @@
   <section class="quick" aria-labelledby="quick-h">
     <h2 class="quick-h" id="quick-h">কোন পরীক্ষা দেবেন?</h2>
     <ol class="opts quick-opts" id="quickList"></ol>
+    <!-- Remembered in this browser; the same switch is under every question during an exam (app.js, auto-next). -->
+    <label class="switch autonext"><input type="checkbox" data-autonext><span class="track" aria-hidden="true"></span><span>উত্তর দিলেই পরের প্রশ্নে যান</span></label>
   </section>
 
   <details class="custom" id="custom">
@@ -2191,6 +2203,9 @@ C:\&gt; COPY NOTE.TXT D:\</pre>
 <script src="written-papers.js"></script>
 <!-- Model answers for the older written papers, one file per paper. -->
 <script src="answers/17-school.js"></script>
+<script src="answers/16-school.js"></script>
+<script src="answers/15-school.js"></script>
+<script src="answers/14-school.js"></script>
 <!-- Chapter-wise MCQs: one file per chapter, in any order (they are sorted by chapter number). -->
 <script src="mcq/chapters.js"></script>
 <script src="mcq/written-prev.js"></script>

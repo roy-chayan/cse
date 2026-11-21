@@ -132,6 +132,13 @@ function home() {
         `<td><a href="#/written/${k}">${esc(w.subject)}</a><span class="wl-n">${bn(n)}টি প্রশ্ন · কোড ${w.code}</span></td>` +
         `<td class="wl-st">${ready ? `<span class="wl-ok">${ready === n ? "তৈরি" : `${bn(ready)}/${bn(n)}`}</span>` : `<span class="na">আসছে</span>`}</td></tr>`;
     }).join("") + "</tbody>";
+  // A click anywhere in a row opens that paper. The title stays the row's one real link, for keyboards and screen readers;
+  // a click that ends a text selection doesn't navigate.
+  $("#wledger").onclick = e => {
+    const a = e.target.closest("tbody tr")?.querySelector("a");
+    if (!a || e.target.closest("a") || String(getSelection())) return;
+    location.hash = a.getAttribute("href");
+  };
 }
 
 
@@ -333,7 +340,7 @@ function fillIncludes(box) {
       if (h && parts.length > 1) {
         const s = document.createElement("h4"), mk = h.querySelector(".mk");
         s.className = "sub-h";
-        s.innerHTML = `<span>${mk ? mk.textContent + " নম্বর" : ""}</span>${h.querySelector("span").innerHTML}`;
+        s.innerHTML = `<span>${mk ? mk.textContent + " নম্বর" : ""}</span><span>${h.querySelector("span").innerHTML}</span>`; // one span: a flex row would split <sub> etc. apart
         kids.unshift(s);
       }
       return kids;
@@ -477,6 +484,7 @@ function mcq(arg, sub) {
 function setup(arg) {
   mount("t-setup");
   document.title = "পরীক্ষা দিন · ICT মাস্টার";
+  $$("[data-autonext]", view).forEach(i => (i.checked = autoNext()));   // the remembered auto-next choice
   const fromCh = chapterOf(arg) ? arg : "";   // came from a chapter's "এই অধ্যায়ে পরীক্ষা দিন"
   $("#pickCh").innerHTML = CH.map(ch =>
     `<label><input type="checkbox" name="ch" value="${ch.id}"${!fromCh || fromCh === ch.id ? " checked" : ""}><span class="box">${CHECK}</span>${bn(ch.no)}. ${esc(ch.name)}</label>`).join("");
@@ -675,7 +683,7 @@ function renderQuestion(popIndex) {
       <button class="tbtn" type="button" data-flag>${exam.flag[exam.cur] ? "চিহ্ন তুলে দিন" : "পরে দেখব"}</button>
       <button class="btn sm next" type="button" data-go="1"${exam.cur === n - 1 ? " disabled" : ""}>পরের →</button>
     </div>
-    <p class="qquit"><button class="tbtn" type="button" data-quit>পরীক্ষা বাতিল করুন</button></p>`;
+    <div class="qquit">${autoSwitch()}<button class="tbtn" type="button" data-quit>পরীক্ষা বাতিল করুন</button></div>`;
   $$(".ebot [data-go]").forEach(b => (b.disabled = (b.dataset.go === "-1" && exam.cur === 0) || (b.dataset.go === "1" && exam.cur === n - 1)));
   renderSheet();
 }
@@ -703,13 +711,55 @@ function showCurrentRow() {
   else if (bottom > sheet.scrollTop + sheet.clientHeight - 40) sheet.scrollTop = bottom - sheet.clientHeight + 40;
 }
 
-function choose(qi, opt) {
+/* Auto-next: a choice this browser remembers, switched on the exam page or under any question. When it is on,
+   answering the question on screen moves to the next one after a short pause, so the filled bubble is seen first.
+   Clearing an answer, or filling a bubble on the answer sheet, doesn't move; moving by hand during the pause wins. */
+let autoTimer = 0;
+const autoNext = () => store.get("autonext", false) === true;
+const autoSwitch = () => `<label class="switch"><input type="checkbox" data-autonext${autoNext() ? " checked" : ""}>` +
+  `<span class="track" aria-hidden="true"></span><span>উত্তর দিলেই পরের প্রশ্নে যান</span></label>`;
+document.addEventListener("change", e => {
+  if (!e.target.matches("[data-autonext]")) return;
+  store.set("autonext", e.target.checked);
+  if (!e.target.checked) clearTimeout(autoTimer);
+});
+
+function choose(qi, opt, onScreen) {
+  clearTimeout(autoTimer);
   exam.ans[qi] = exam.ans[qi] === opt ? null : opt;   // tapping the filled bubble again clears it
   saveExam();
   if (qi === exam.cur) renderQuestion(exam.ans[qi] === null ? undefined : opt); else renderSheet();
+  if (!onScreen || !autoNext() || qi !== exam.cur || exam.ans[qi] === null) return;
+  if (qi === exam.order.length - 1) return toast("এটিই শেষ প্রশ্ন। উত্তরপত্র দেখে জমা দিন।");
+  autoTimer = setTimeout(() => { if (exam && document.body.dataset.screen === "exam" && exam.cur === qi) go(1); }, 350);
 }
-function go(step) { const c = exam.cur + step; if (c < 0 || c >= exam.order.length) return; exam.cur = c; saveExam(); renderQuestion(); window.scrollTo(0, 0); }
-function jump(i) { exam.cur = i; saveExam(); renderQuestion(); toggleSheet(false); window.scrollTo(0, 0); }
+function go(step) {
+  clearTimeout(autoTimer);
+  const c = (turn ? turn.to : exam.cur) + step;   // pressed again mid-turn: count from where it is heading
+  if (c >= 0 && c < exam.order.length) turnTo(c, step);
+}
+function jump(i) { clearTimeout(autoTimer); toggleSheet(false); if (i !== exam.cur) turnTo(i, i > exam.cur ? 1 : -1); }
+
+/* Turning to another question reads as a page turn, not a jump: the question on screen fades out sliding one way,
+   the page goes to the top while it is blank, and the new one fades in from the other side (forward ← , back →).
+   The pane takes no taps and the answer keys wait while it is blank. Reduced motion: an instant swap. */
+let turn = null;
+function turnTo(c, dir) {
+  const pane = $("#qpane");
+  if (turn) clearTimeout(turn.timer);
+  const show = () => {
+    turn = null;
+    if (!exam || !$("#qpane")) return;
+    exam.cur = c; saveExam(); renderQuestion(); window.scrollTo(0, 0);
+    pane.classList.remove("q-out", "q-out-back", "q-in", "q-in-back");
+    void pane.offsetWidth;                         // restart the entry animation
+    pane.classList.add(dir < 0 ? "q-in-back" : "q-in");
+  };
+  if (!pane || matchMedia("(prefers-reduced-motion: reduce)").matches) return show();
+  pane.classList.remove("q-in", "q-in-back");
+  pane.classList.add(dir < 0 ? "q-out-back" : "q-out");
+  turn = { to: c, timer: setTimeout(show, 130) };
+}
 function toggleSheet(open) {
   const s = $("#sheet"); if (!s) return;
   s.classList.toggle("open", open); $("#scrim").hidden = !open; $("#sheetBtn").setAttribute("aria-expanded", open);
@@ -759,7 +809,7 @@ async function finish(timeUp) {
 view.addEventListener("click", e => {
   if (!exam || document.body.dataset.screen !== "exam") return;
   const t = e.target;
-  const opt = t.closest("[data-opt]"); if (opt) return choose(exam.cur, Number(opt.dataset.opt));
+  const opt = t.closest("[data-opt]"); if (opt) return choose(exam.cur, Number(opt.dataset.opt), true);
   const bub = t.closest("#omr .bub"); if (bub) return choose(Number(bub.dataset.q), Number(bub.dataset.i));
   const j = t.closest("[data-jump]"); if (j) return jump(Number(j.dataset.jump));
   const g = t.closest("[data-go]"); if (g) return go(Number(g.dataset.go));
@@ -779,7 +829,7 @@ document.addEventListener("keydown", e => {
   if (asking || !exam || document.body.dataset.screen !== "exam" || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   const i = "1234".indexOf(k) >= 0 ? Number(k) - 1 : "১২৩৪".indexOf(k) >= 0 ? "১২৩৪".indexOf(k) : "abcd".indexOf(k);
-  if (i >= 0) choose(exam.cur, i);
+  if (i >= 0) { if (!turn) choose(exam.cur, i, true); }   // not while the old question is fading out
   else if (k === "arrowright") go(1);
   else if (k === "arrowleft") go(-1);
   else if (k === "f") { exam.flag[exam.cur] = !exam.flag[exam.cur]; saveExam(); renderQuestion(); }
@@ -908,8 +958,21 @@ function route() {
   $$(".nav a, .tabbar a").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === section));
   $$(".demo nav a").forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href").split("/")[1] === (location.hash.split("/")[1] || "")));
   if (!sub) window.scrollTo(0, 0);
+  // Floating shortcuts: home everywhere but home; lifted over the exam form's sticky summary.
+  $("#toHome").hidden = screen === "";
+  const sum = $("#view .summary");
+  $("#fab").style.setProperty("--fab-lift", sum ? `${sum.offsetHeight + 12}px` : "0px");
+  syncFab();
 }
 addEventListener("hashchange", route);
+
+/* "Up" shows once the page has scrolled most of a screen. It takes keyboard focus back to the top too. */
+function syncFab() { $("#fab").classList.toggle("up", scrollY > Math.min(600, innerHeight * 0.75)); }
+addEventListener("scroll", syncFab, { passive: true });
+$("#toTop").onclick = () => {
+  scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  $(".top .brand").focus({ preventScroll: true });
+};
 
 /* Links to things not added yet. */
 document.addEventListener("click", e => {

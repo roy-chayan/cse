@@ -201,6 +201,8 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .ledger td a+a{margin-left:14px;padding-left:14px;border-left:1px solid var(--rule)}
 .ledger td a:hover{color:var(--form-ink);text-decoration:underline}
 .ledger td .go{color:var(--form-ink)}
+#wledger tbody tr{cursor:pointer}                       /* the whole row opens the paper (app.js home()) */
+#wledger tbody tr:hover td a{color:var(--form-ink);text-decoration:underline}
 .ledger tbody tr:hover>*{background:linear-gradient(var(--sunk),var(--sunk)) no-repeat 0 50%/100% calc(100% - 2px)}
 @media (max-width:620px){
   .ledger td{padding-top:4px;padding-bottom:4px}
@@ -747,8 +749,9 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 
 /* Step-by-step algorithm */
 .algo{list-style:none;counter-reset:st;margin:0 0 16px;padding:0;font-family:var(--serif);font-size:17.5px;line-height:1.7;border-top:1px solid var(--ink)}
-.algo li{counter-increment:st;display:grid;grid-template-columns:62px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule)}
-.algo li::before{content:"ধাপ " counter(st,bengali);padding-top:3px;font-family:var(--sans);font-size:14px;color:var(--form-ink)}
+/* The step label sits in a fixed left gutter, so a step can mix <b> and plain text freely (a grid would split them). */
+.algo li{counter-increment:st;position:relative;padding:8px 0 8px 74px;border-bottom:1px solid var(--rule)}
+.algo li::before{content:"ধাপ " counter(st,bengali);position:absolute;left:0;top:8px;width:62px;padding-top:3px;font-family:var(--sans);font-size:14px;line-height:1.7;color:var(--form-ink)}
 
 /* Flowchart */
 .flow svg{max-width:460px}
@@ -765,7 +768,10 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .ans-body .expand+.prose{margin-top:12px}
 .flow.syms td{vertical-align:middle}
 .flow.syms td svg{width:84px;max-width:84px}
-.flow.rectflow svg{max-width:320px}
+.flow.slim svg{max-width:320px}          /* a tall, narrow flowchart stays at its drawn size */
+.fig.wide.big svg{min-width:560px;max-width:600px}
+.flow.onion svg{max-width:400px}
+.flow .arm.thin{stroke-width:3}
 /* The block diagram is drawn wider than the flowchart; on phones it keeps a readable size and scrolls sideways. */
 .fig.wide.alu svg{min-width:430px;max-width:460px}
 
@@ -880,7 +886,17 @@ body[data-screen="exam"] .top{display:none}
 @keyframes fill{from{transform:scale(.72)}to{transform:scale(1)}}
 .qact{display:flex;align-items:center;gap:22px;margin-top:26px}
 .qact .next{margin-left:auto}
-.qquit{margin-top:44px;font-size:14px}
+/* Turning to another question (app.js turnTo): out one side, in from the other. */
+#qpane.q-out{animation:q-out .13s ease-in forwards;pointer-events:none}
+#qpane.q-out-back{animation:q-out-back .13s ease-in forwards;pointer-events:none}
+#qpane.q-in{animation:q-in .22s ease-out}
+#qpane.q-in-back{animation:q-in-back .22s ease-out}
+@keyframes q-out{to{opacity:0;transform:translateX(-12px)}}
+@keyframes q-out-back{to{opacity:0;transform:translateX(12px)}}
+@keyframes q-in{from{opacity:0;transform:translateX(12px)}}
+@keyframes q-in-back{from{opacity:0;transform:translateX(-12px)}}
+.qquit{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 24px;margin-top:44px;font-size:14px}
+.quick .autonext{margin-top:12px}
 .qquit .tbtn{font-size:14px;color:var(--form-ink)}
 @media (hover:none){.opt kbd{display:none}}
 
@@ -1082,6 +1098,25 @@ body[data-screen="exam"] .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
   body[data-screen="exam"] #view{padding-bottom:0}
 }
 html.locked .tabbar{display:none !important}
+
+/* ---------- floating shortcuts: to the top, and home ---------- */
+/* Two answer-sheet bubbles at the bottom right. "Up" fades in once the page has scrolled; "home" shows on every
+   screen but home. --fab-lift raises them over a sticky bar at the bottom (the exam form's summary). */
+.fab{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom) + var(--fab-lift,0px));
+  z-index:35;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.fab-b{pointer-events:auto;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1.5px solid var(--ink);border-radius:50%;
+  background:var(--paper);color:var(--ink);text-decoration:none;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,opacity .2s,transform .2s,visibility .2s}
+.fab-b svg{width:20px;height:20px}
+.fab-b:hover{background:var(--primary);border-color:var(--primary);color:var(--on-bar)}
+.fab-b[hidden]{display:none}
+#toTop{opacity:0;visibility:hidden;transform:translateY(8px)}
+.fab.up #toTop{opacity:1;visibility:visible;transform:none}
+body[data-screen="exam"] .fab,html.locked .fab{display:none}
+@media (max-width:719px){
+  .fab{bottom:calc(var(--tabbar-h) + 14px + var(--fab-lift,0px))}
+  #toHome{display:none}
+}
+@media print{.fab{display:none}}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition:none !important;animation:none !important}
