@@ -106,9 +106,52 @@ function highlight(code) {
 
 
 /* ================= HOME ================= */
+/* Motivational lines (quotes.js) above সূচিপত্র, one at a time. All of them sit in the same spot, so the page below
+   never jumps; the one on screen fades out upwards and the next fades in from below, every 7 seconds. Tapping or
+   clicking the quote shows the next one at once (and the 7 seconds start again). Pointing at it, focusing it or leaving
+   the tab pauses the turning; with reduced motion it only changes when tapped. There is no counter or row of dots,
+   so the list in quotes.js can grow as long as you like. */
+let quoteTimer = 0;
+function renderQuotes() {
+  clearInterval(quoteTimer);
+  const box = $("#quotes"), list = (window.ICT_QUOTES || []).filter(Boolean);
+  if (!box || !list.length) return;
+  let cur = Math.floor(Math.random() * list.length), held = false;
+  const items = list.map((q, i) => `<span class="q-item${i === cur ? " on" : ""}"${i === cur ? "" : ' aria-hidden="true"'}>${esc(q)}</span>`).join("");
+  box.innerHTML = `<span class="q-mark" aria-hidden="true">“</span>` + (list.length > 1
+    ? `<button type="button" class="q-stage" title="চাপলে পরের প্রেরণা">${items}</button>`
+    : `<p class="q-stage">${items}</p>`);
+  box.hidden = false;
+  const els = $$(".q-item", box), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const show = i => {
+    const old = els[cur];
+    old.classList.remove("on"); old.classList.add("out"); old.setAttribute("aria-hidden", "true");
+    setTimeout(() => old.classList.remove("out"), 700);
+    cur = i;
+    els[cur].classList.remove("out"); els[cur].classList.add("on"); els[cur].removeAttribute("aria-hidden");
+  };
+  const start = () => {
+    clearInterval(quoteTimer);
+    if (still) return;
+    quoteTimer = setInterval(() => {
+      if (!box.isConnected) return clearInterval(quoteTimer);   // the reader has left the home page
+      if (!held && !document.hidden) show((cur + 1) % list.length);
+    }, 7000);
+  };
+  if (list.length < 2) return;
+  $(".q-stage", box).onclick = () => { show((cur + 1) % list.length); start(); };
+  // Pause only for a mouse resting on it or keyboard focus on it; a tap or a click doesn't freeze it.
+  box.onpointerenter = e => { if (e.pointerType === "mouse") held = true; };
+  box.onpointerleave = e => { if (e.pointerType === "mouse") held = false; };
+  box.addEventListener("focusin", e => { if (e.target.matches(":focus-visible")) held = true; });
+  box.addEventListener("focusout", () => (held = false));
+  start();
+}
+
 function home() {
   mount("t-home");
   document.title = "ICT মাস্টার · শিক্ষক নিবন্ধন প্রস্তুতি";
+  renderQuotes();
 
   // Every chapter of the syllabus, in order (mcq/chapters.js). An added chapter links to its MCQs, with its
   // question count and a dot for how much of it has come up in exams; the rest show "শিগগির".
