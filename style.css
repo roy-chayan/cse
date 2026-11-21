@@ -1,0 +1,1090 @@
+/* ICT মাস্টার: one stylesheet for every screen.
+   The look comes from the exam hall: off-white paper, black ballpoint ink, and the blue
+   "drop-out" ink that OMR answer sheets are printed in. The bubble (বৃত্ত) is the one
+   shape that repeats everywhere: answering, reading progress, results. Corners stay
+   square, lines stay thin, and type does the work that boxes and shadows usually do. */
+
+/* ---------- colours and type ---------- */
+:root{
+  --paper:#EFF0EC;      /* page: cool white */
+  --sheet:#FAFAF7;      /* a sheet lying on the page: answer sheet, question paper */
+  --sunk:#E3E5DF;       /* hover and pressed */
+  --ink:#14171F;        /* ballpoint blue-black: text and filled bubbles */
+  --ink-2:#434957;
+  --ink-3:#646A79;
+  --rule:#D5D8D0;
+  --rule-2:#B7BBB1;
+  --form:#2F50A5;       /* OMR blue: bubble outlines, numbers, accents */
+  --form-ink:#263F86;   /* OMR blue for small text */
+  --form-wash:#DEE4F3;
+  --form-line:#AFBCE0;
+  --ok:#1E6A49;         /* examiner's green: correct answers */
+  --ok-wash:#DAE9DF;
+  --bad:#B5382A;        /* red: wrong answers, low time */
+  --bad-ink:#9E2F22;
+  --hl:#F0DA7C;         /* highlighter */
+  --primary:#2F50A5;    /* buttons: blue with white text */
+  --primary-hover:#263F86;
+  --on-primary:#FFFFFF;
+  --primary-text:#263F86; /* outline buttons on the page */
+  --bar:#2F50A5;        /* top bar and exam bar: blue with white text */
+  --on-bar:#FFFFFF;
+  --on-bar-2:rgba(255,255,255,.84);
+  --on-bar-3:rgba(255,255,255,.74);
+  --bar-accent:#FFFFFF;
+  --bar-line:#2F50A5;
+  --bar-hover:rgba(255,255,255,.14);
+  --clock-low:#FFD0C7;
+  --serif:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --sans:"Anek Bangla","Noto Sans Bengali",system-ui,sans-serif;
+  --mono:"Fragment Mono","Anek Bangla",ui-monospace,Menlo,Consolas,monospace;
+  --gut:16px;
+  color-scheme:light;
+}
+/* Dark: the same blue, lifted so it reads on a dark page; the bars go a deeper blue so they don't glare. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#11141A; --sheet:#171B22; --sunk:#0B0D11;
+  --ink:#E6E9F0; --ink-2:#AEB4C2; --ink-3:#828999;
+  --rule:#262B35; --rule-2:#3A404C;
+  --form:#7F9CF0; --form-ink:#9DB3F5; --form-wash:#18203A; --form-line:#34437A;
+  --ok:#6FC49A; --ok-wash:#13261D; --bad:#EE7B66; --bad-ink:#F39582; --hl:#5A4C17;
+  --primary:#3B5CC0; --primary-hover:#4A6BCC; --on-primary:#FFFFFF; --primary-text:#9DB3F5;
+  --bar:#22397A; --on-bar:#FFFFFF; --on-bar-2:rgba(255,255,255,.82); --on-bar-3:rgba(255,255,255,.7);
+  --bar-accent:#FFFFFF; --bar-line:#22397A; --bar-hover:rgba(255,255,255,.12); --clock-low:#FFC9BF;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11141A; --sheet:#171B22; --sunk:#0B0D11;
+  --ink:#E6E9F0; --ink-2:#AEB4C2; --ink-3:#828999;
+  --rule:#262B35; --rule-2:#3A404C;
+  --form:#7F9CF0; --form-ink:#9DB3F5; --form-wash:#18203A; --form-line:#34437A;
+  --ok:#6FC49A; --ok-wash:#13261D; --bad:#EE7B66; --bad-ink:#F39582; --hl:#5A4C17;
+  --primary:#3B5CC0; --primary-hover:#4A6BCC; --on-primary:#FFFFFF; --primary-text:#9DB3F5;
+  --bar:#22397A; --on-bar:#FFFFFF; --on-bar-2:rgba(255,255,255,.82); --on-bar-3:rgba(255,255,255,.7);
+  --bar-accent:#FFFFFF; --bar-line:#22397A; --bar-hover:rgba(255,255,255,.12); --clock-low:#FFC9BF;
+  color-scheme:dark}
+@media (min-width:720px){:root{--gut:32px}}
+@media (min-width:1180px){:root{--gut:48px}}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:4px;text-decoration-color:var(--rule-2)}
+a:hover{text-decoration-color:currentColor}
+button,input{font:inherit;color:inherit}
+h1,h2,h3{font-weight:400;margin:0}
+sub,sup{font-size:.74em;line-height:0}
+code{font-family:var(--mono)}
+::selection{background:var(--hl);color:var(--ink)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+[hidden]{display:none !important}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--gut)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.label{margin:0 0 4px;font-size:13.5px;font-stretch:95%;color:var(--ink-3)}
+.m{font-family:var(--mono);font-size:.92em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- the bubble ---------- */
+.bub{--s:30px;flex:none;display:inline-grid;place-items:center;width:var(--s);height:var(--s);border-radius:50%;
+  border:1.5px solid var(--form);color:var(--form-ink);background:transparent;
+  font-family:var(--sans);font-style:normal;font-size:calc(var(--s) * .5);font-weight:500;line-height:1;padding:0;
+  transition:background-color .12s,border-color .12s,color .12s,transform .12s}
+.bub.sm{--s:23px}
+.bub.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dot{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;border:1.5px solid var(--form)}
+.dot.full{background:var(--ink);border-color:var(--ink)}
+.dot.half{border-color:var(--ink);background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 22px;
+  border:1.5px solid var(--primary);border-radius:2px;background:var(--primary);color:var(--on-primary);
+  font-size:16px;font-weight:500;text-decoration:none;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s}
+.btn:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
+.btn.line{background:transparent;color:var(--primary-text);border-color:var(--primary-text)}
+.btn.line:hover{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.btn.sm{min-height:40px;padding:0 16px;font-size:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.tbtn{display:inline-flex;align-items:center;min-height:44px;border:0;background:none;padding:6px 0;cursor:pointer;font-size:15px;color:var(--ink-2);
+  text-decoration:underline;text-underline-offset:5px;text-decoration-color:var(--rule-2)}
+.tbtn:hover{color:var(--ink);text-decoration-color:currentColor}
+.tbtn:disabled{opacity:.35;cursor:default;text-decoration:none}
+
+/* ---------- demo strip (remove with real content) ---------- */
+.demo{background:var(--ink);color:var(--paper);font-size:13px}
+.demo .wrap{display:flex;align-items:center;gap:14px;height:32px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.demo .wrap::-webkit-scrollbar{display:none}
+.demo b{font-weight:600;font-stretch:90%}
+.demo nav{display:flex;gap:14px;margin-left:auto}
+.demo a{text-decoration:none;opacity:.8}
+.demo a:hover,.demo a[aria-current]{opacity:1;text-decoration:underline;text-decoration-color:currentColor}
+@media (max-width:719px){.demo-what{display:none}.demo nav{margin-left:0}}
+
+/* ---------- top bar ---------- */
+.top{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:58px}
+.brand{display:flex;align-items:center;flex:none;min-height:44px;text-decoration:none}
+/* The logo on the blue bars: the all-white version (brand/logo-white.svg). */
+.logo-bar{display:block;height:30px;width:auto}
+.nav{display:flex;gap:22px;margin-left:auto;font-size:15.5px}
+.nav a{position:relative;min-width:44px;text-align:center;text-decoration:none;color:var(--on-bar-2);padding:17px 6px;margin:0 -6px}
+.nav a:hover{color:var(--on-bar)}
+.nav a[aria-current]{color:var(--on-bar)}
+.nav a[aria-current]::after{content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:3px;background:var(--bar-accent)}
+.theme{display:grid;place-items:center;width:44px;height:44px;margin-right:-12px;flex:none;border:0;background:none;color:var(--on-bar-2);cursor:pointer;border-radius:50%}
+.theme:hover{color:var(--on-bar);background:var(--bar-hover)}
+.top :focus-visible,.ebar :focus-visible{outline-color:var(--on-bar)}
+.theme svg{width:19px;height:19px}
+@media (max-width:420px){.nav{gap:16px;font-size:15px}.logo-bar{height:24px}}
+/* Small phones (320–360px): logo, three links and the light/dark button still fit on one line. */
+@media (max-width:360px){.top .wrap{gap:10px}.logo-bar{height:19px}.nav{gap:12px;font-size:14px}.theme{margin-right:-14px}}
+
+/* ---------- home: masthead ---------- */
+.mast{padding:36px 0 0}
+.mast-kicker{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:0 0 14px;font-size:14px;font-stretch:92%;color:var(--ink-2)}
+.mast-kicker span+span::before{content:"";display:inline-block;width:7px;height:7px;margin-right:14px;border-radius:50%;background:var(--form);vertical-align:1px}
+@media (max-width:480px){.mast-kicker{flex-direction:column;align-items:flex-start;gap:2px}.mast-kicker span+span::before{display:none}}
+.mast-row{display:grid;gap:14px;padding-bottom:24px;border-bottom:3px double var(--ink)}
+.mast-title{margin:0;line-height:0}
+.mast-title img{display:block;width:clamp(280px,46vw,620px);max-width:100%;height:auto}
+/* The full-colour logo has a dark-page version with its ink parts turned light (brand/logo-dark.svg). */
+.logo-dark{display:none !important}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .logo-light{display:none !important}
+  :root:not([data-theme="light"]) .logo-dark{display:block !important}
+}
+:root[data-theme="dark"] .logo-light{display:none !important}
+:root[data-theme="dark"] .logo-dark{display:block !important}
+.mast-lede{font-family:var(--serif);font-size:clamp(18px,2.1vw,22px);line-height:1.7;color:var(--ink-2);max-width:31em;margin:0}
+@media (min-width:860px){.mast-row{grid-template-columns:auto 1fr;align-items:end;gap:64px}.mast-lede{padding-bottom:22px}}
+
+/* Key hints (the 1–4 shown beside exam options on a computer). */
+kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid var(--rule-2);border-radius:2px;padding:1px 6px;line-height:1.5}
+
+/* ---------- section heading (home, result) ---------- */
+.sec{padding-top:64px}
+.sec-h{display:grid;grid-template-columns:auto 1fr;gap:0 16px;align-items:baseline;padding-top:12px;border-top:1px solid var(--ink);margin-bottom:28px}
+/* Right under the masthead, its double rule is the section's top rule. */
+.mast+.sec{padding-top:30px}
+.mast+.sec .sec-h{border-top:0;padding-top:0}
+.sec-no{font-family:var(--serif);font-size:22px;color:var(--form)}
+.sec-h h2{font-family:var(--serif);font-size:clamp(32px,4.6vw,46px);line-height:1.2}
+.sec-h p{grid-column:2;margin:6px 0 0;max-width:54ch;color:var(--ink-2)}
+
+/* ---------- home: contents ---------- */
+.toc{display:grid;gap:0 64px}
+@media (min-width:880px){.toc{grid-template-columns:1fr 1fr}}
+/* One list in two columns: on phones the second half simply continues the first, so it drops its top rule. */
+@media (max-width:879px){.toc ol+ol{border-top:0}}
+.toc ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.toc .row{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 0;border-bottom:1px solid var(--rule);text-decoration:none;color:inherit}
+.toc .t{min-width:0;font-size:17px;line-height:1.45}
+.toc .t small{display:block;margin-top:1px;font-size:13px;line-height:1.5;color:var(--ink-3)}
+.toc .soon .t{color:var(--ink-3)}
+.toc .soon .c{font-size:13px}
+.toc li>.nl{border-bottom:1px solid var(--rule)}
+.toc .lead{flex:1;min-width:20px;height:1px;align-self:center;margin-top:6px;background-image:radial-gradient(circle,var(--rule-2) 1px,transparent 1.2px);background-size:6px 3px;background-repeat:repeat-x;background-position:center}
+.toc .c{font-size:14px;color:var(--ink-3);white-space:nowrap}
+.toc a.row:hover .t{color:var(--form-ink)}
+.toc a.row:hover .dot:not(.full):not(.half){background:var(--form-wash)}
+.dot.soon,.toc .soon .dot{border-style:dashed;border-color:var(--rule-2)}
+.toc-key{display:flex;flex-wrap:wrap;gap:6px 22px;margin:22px 0 0;font-size:13.5px;color:var(--ink-3)}
+.toc-key span{display:inline-flex;align-items:center;gap:8px}
+
+/* ---------- ledger tables (past papers, paper picker) ---------- */
+.ledger{width:100%;border-collapse:collapse;font-size:15.5px;min-width:340px}
+.ledger th,.ledger td{padding:12px 12px 12px 0;text-align:left;border-bottom:1px solid var(--rule);vertical-align:middle}
+.ledger thead th{padding-top:0;padding-bottom:10px;font-size:13px;font-weight:400;font-stretch:90%;color:var(--ink-3);border-bottom:1px solid var(--ink)}
+.ledger tbody th{width:22%;font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.2;white-space:nowrap}
+.ledger tbody th small{display:block;font-family:var(--sans);font-size:13px;color:var(--ink-3);margin-top:2px}
+.ledger td a{text-decoration:none;white-space:nowrap}
+.ledger td a+a{margin-left:14px;padding-left:14px;border-left:1px solid var(--rule)}
+.ledger td a:hover{color:var(--form-ink);text-decoration:underline}
+.ledger td .go{color:var(--form-ink)}
+.ledger tbody tr:hover>*{background:linear-gradient(var(--sunk),var(--sunk)) no-repeat 0 50%/100% calc(100% - 2px)}
+@media (max-width:620px){
+  .ledger td{padding-top:4px;padding-bottom:4px}
+  .ledger td a{display:flex;align-items:center;min-height:42px}
+  .ledger td a+a{margin:0;padding-left:0;border:0}
+  .ledger tbody th{font-size:19px}
+}
+
+/* ---------- home: make-your-own-exam strip ---------- */
+.cta{display:grid;grid-template-columns:12px 1fr;gap:0 22px;margin-top:72px;padding:26px 22px 26px 14px;background:var(--sheet);border:1px solid var(--form-line)}
+.tmarks{display:flex;flex-direction:column;justify-content:space-between;padding:4px 0}
+.tmarks i{display:block;width:12px;height:5px;background:var(--ink)}
+.cta h2{font-family:var(--serif);font-size:clamp(24px,3.2vw,34px);line-height:1.4;max-width:22em}
+.cta-body>p:not(.label){margin:10px 0 0;color:var(--ink-2);max-width:56ch}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;margin-top:24px}
+.bubs{display:flex;gap:10px}
+@media (min-width:720px){.cta{padding:34px 40px 34px 18px;gap:0 36px}}
+
+/* ---------- home: footer ---------- */
+.colophon{display:grid;gap:24px;margin:72px 0 0;padding:22px 0 56px;border-top:1px solid var(--ink);font-size:15px;color:var(--ink-2)}
+.colophon p{margin:0}
+.colophon p+p{margin-top:2px}
+.colophon .by{font-family:var(--serif);font-size:20px;color:var(--ink)}
+@media (min-width:860px){.colophon{grid-template-columns:2fr 1fr;gap:64px}}
+
+/* ---------- reading pages: head and section bar ---------- */
+.doc-head{padding-top:36px;padding-bottom:28px}
+.crumb{display:flex;flex-wrap:wrap;gap:4px 10px;margin:0;font-size:14px;color:var(--ink-3)}
+.crumb a{text-decoration:none;padding:12px 12px;margin:-12px -12px}
+.crumb a:hover{color:var(--ink);text-decoration:underline}
+.crumb i{font-style:normal;color:var(--ink-3)}
+.doc-head h1{font-family:var(--serif);font-size:clamp(48px,9vw,96px);line-height:1.12;margin:12px 0 14px}
+.doc-lede{font-family:var(--serif);font-size:clamp(18px,2vw,21px);line-height:1.7;color:var(--ink-2);max-width:34em;margin:0}
+.doc-meta{display:flex;flex-wrap:wrap;gap:6px 26px;margin:22px 0 0;font-size:14.5px;color:var(--ink-3)}
+.doc-meta b{font-weight:500;color:var(--ink)}
+.secbar{position:sticky;top:0;z-index:15;background:var(--paper);border-block:1px solid var(--ink)}
+.secbar .wrap{display:flex;align-items:center;gap:18px;height:52px}
+.secbar nav{flex:1;min-width:0;display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.secbar nav::-webkit-scrollbar{display:none}
+.secbar nav a{position:relative;flex:none;padding:14px 6px;font-size:15px;color:var(--ink-2);text-decoration:none}
+.secbar nav a:hover{color:var(--ink)}
+.secbar nav a.on{color:var(--ink)}
+.secbar nav a.on::after{content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:2px;background:var(--form)}
+
+/* A two-position switch: the knob is a bubble that fills in when it's on. */
+.switch{flex:none;display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:14.5px;cursor:pointer;user-select:none;white-space:nowrap}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch .track{position:relative;width:38px;height:22px;border:1.5px solid var(--ink);border-radius:11px;transition:background-color .15s}
+.switch .track::after{content:"";position:absolute;top:2.5px;left:2.5px;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);background:var(--paper);transition:transform .18s,background-color .18s}
+.switch input:checked+.track{background:var(--ink)}
+.switch input:checked+.track::after{transform:translateX(16px);background:var(--paper);border-color:var(--paper)}
+.switch input:focus-visible+.track{outline:2px solid var(--ink);outline-offset:3px}
+@media (max-width:520px){.switch span:last-child{font-size:13.5px}}
+
+/* ---------- note body: margin number, text, margin notes ---------- */
+.doc{padding-bottom:96px}
+.blk{display:grid;gap:14px;padding-top:60px}
+.blk-no{margin:0;font-size:13.5px;font-stretch:90%;color:var(--form-ink)}
+.body{min-width:0}
+.body h2{font-family:var(--serif);font-size:clamp(30px,3.8vw,40px);line-height:1.25;margin-bottom:18px}
+.side{min-width:0;font-size:14.5px;line-height:1.65;color:var(--ink-2);border-top:1px solid var(--form-line);padding-top:10px}
+.side p{margin:0}
+.side p+p{margin-top:10px}
+.side b{display:block;font-weight:500;font-stretch:92%;color:var(--form-ink)}
+@media (min-width:1120px){
+  .blk{grid-template-columns:120px minmax(0,700px) minmax(0,1fr);gap:0 48px}
+  .blk-no{padding-top:16px;border-top:1px solid var(--ink)}
+  .body{padding-top:12px;border-top:1px solid var(--ink)}
+  .side{margin-top:88px;align-self:start}
+}
+@media (max-width:1119px){.blk{max-width:740px}.blk-no{padding-top:14px;border-top:1px solid var(--ink)}}
+@media (min-width:900px) and (max-width:1119px){
+  .blk{max-width:none;grid-template-columns:minmax(0,1fr) 220px;gap:14px 40px}
+  .blk-no{grid-column:1/-1}
+  .side{margin-top:62px;align-self:start}
+}
+
+.statement{font-family:var(--serif);font-size:clamp(22px,2.7vw,28px);line-height:1.65;margin:0}
+.statement em,.prose em,.tip em{font-style:normal;background:linear-gradient(transparent 58%,var(--hl) 58%,var(--hl) 92%,transparent 92%)}
+.prose{font-family:var(--serif);font-size:19px;line-height:1.8;margin:0 0 18px;max-width:36em}
+.prose.small{font-size:17px;color:var(--ink-2)}
+.eqline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;margin:26px 0 0;padding:20px 0;border-block:1px solid var(--rule);font-family:var(--mono);font-size:clamp(19px,2.6vw,27px)}
+.eqline i{font-style:normal;color:var(--ink-3)}
+.eqline sub{color:var(--form-ink)}
+.sub{display:flex;gap:12px;align-items:baseline;margin:40px 0 12px;font-family:var(--serif);font-size:23px;line-height:1.35}
+.sub span{font-family:var(--sans);font-size:14px;font-stretch:90%;color:var(--form-ink)}
+.xt{display:inline-block;margin:0 0 0 8px;padding:0 6px;border:1px solid var(--form-line);border-radius:2px;
+  font-family:var(--sans);font-size:13px;font-stretch:95%;line-height:1.75;color:var(--form-ink);white-space:nowrap;vertical-align:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags .xt{margin:0}
+
+/* Rule tables: no boxes, a black rule on top, thin rules between rows. */
+.rt{width:100%;border-collapse:collapse;font-size:16px}
+.rt th{text-align:left;font-weight:400;font-size:13px;font-stretch:90%;color:var(--ink-3);padding:0 14px 10px 0;border-bottom:1px solid var(--ink)}
+.rt td{padding:13px 14px 13px 0;border-bottom:1px solid var(--rule);vertical-align:baseline;line-height:1.6}
+.rt td:first-child{font-family:var(--serif);font-size:19px;white-space:nowrap}
+.rt td.n{font-family:var(--serif);font-size:19px}
+.rt td .xt{margin-top:4px}
+.rng{margin-top:28px}
+.rng td{white-space:nowrap}
+@media (max-width:640px){
+  .rt:not(.rng):not(.cmp) thead{display:none}
+  .rt:not(.rng):not(.cmp) tr{display:grid;grid-template-columns:auto auto 1fr;gap:2px 14px;padding:12px 0;border-bottom:1px solid var(--rule)}
+  .rt:not(.rng):not(.cmp) td{padding:0;border:0}
+  .rt:not(.rng):not(.cmp) td:last-child{grid-column:1/-1;color:var(--ink-2);font-size:15.5px}
+  .rng{display:block;overflow-x:auto}
+}
+
+/* 0–15 at a glance */
+.g16{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink);border-left:1px solid var(--rule)}
+.g16 div{padding:8px 10px 10px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.g16 b{display:block;font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.3}
+.g16 code{display:block;font-size:13.5px;color:var(--ink-2)}
+.g16 .hx{color:var(--form-ink)}
+@media (min-width:720px){.g16{grid-template-columns:repeat(8,1fr)}}
+
+/* Worked examples, drawn the way they're written by hand. */
+.work{position:relative;display:grid;grid-template-columns:auto auto;justify-content:start;align-items:stretch;gap:0 22px;margin:8px 0 0}
+.ladder{display:grid;grid-template-columns:auto auto auto;font-family:var(--mono);font-size:21px;line-height:1}
+.ladder span{padding:9px 0}
+.ladder .dv{padding-right:10px;color:var(--ink-3);text-align:right}
+.ladder .qt{min-width:3.2ch;padding-left:12px;padding-right:18px;border-left:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);text-align:right}
+.ladder .qt.end{border:0}
+.ladder .rm{padding-left:4px;color:var(--form-ink)}
+.readup{display:flex;align-items:center;gap:10px;padding:6px 0 10px;color:var(--form-ink);font-size:14px;font-stretch:95%}
+.readup svg{flex:none;width:14px;height:100%;overflow:visible}
+.readup path{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.readup span{max-width:5em;line-height:1.4}
+.work-res{grid-column:1/-1;margin:16px 0 0;font-family:var(--mono);font-size:21px}
+.work-res b,.expand b{font-weight:400;color:var(--paper);background:var(--ink);padding:0 6px}
+.groups{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 18px;margin:4px 0 0}
+.groups span{display:flex;flex-direction:column;align-items:center;gap:10px}
+.groups code{font-size:22px;padding:0 4px 8px;border-bottom:1.5px solid var(--ink);position:relative}
+.groups code::before,.groups code::after{content:"";position:absolute;bottom:-1.5px;width:1.5px;height:8px;background:var(--ink)}
+.groups code::before{left:0}.groups code::after{right:0}
+.groups>span>b{font-family:var(--serif);font-weight:400;font-size:26px;line-height:1;color:var(--form-ink)}
+.groups .work-res{flex-basis:100%;margin-top:6px}
+.expand{margin:0;font-family:var(--mono);font-size:clamp(15px,2.1vw,19px);line-height:2;overflow-wrap:anywhere}
+.expand>span:first-child{color:var(--ink-2)}
+.tip{margin:22px 0 0;padding:2px 0 2px 16px;border-left:3px solid var(--hl);font-family:var(--serif);font-size:18px;line-height:1.75;max-width:36em}
+.tip b{font-weight:400;color:var(--form-ink)}
+.handsum{display:grid;grid-template-columns:auto 1fr;justify-content:start;gap:4px 26px;align-items:baseline;margin:6px 0 0}
+.handsum code{font-size:23px;letter-spacing:.32em;text-align:right;white-space:pre}
+.handsum span{font-size:15px;color:var(--ink-2)}
+.handsum .plus{padding-bottom:6px;border-bottom:1.5px solid var(--ink)}
+.handsum .tot{padding-top:4px}
+.handsum b{font-weight:500;color:var(--ink)}
+
+/* Code */
+.code{margin:0;padding:16px 20px;overflow-x:auto;background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--ink);
+  font-family:var(--mono);font-size:14.5px;line-height:1.75;tab-size:4;color:var(--ink)}
+.code .k{color:var(--form-ink)}
+.code .s{color:var(--ok)}
+.code .c{color:var(--ink-3);font-style:italic}
+.code .p{color:var(--ink-2)}
+.code .n{color:var(--ink)}
+.caption{margin:12px 0 0;font-size:15px;color:var(--ink-2);max-width:60ch}
+
+/* Common mistakes, corrected the way a teacher corrects: the wrong form struck through in red, the right one written beside it. */
+.fixes{border-top:1px solid var(--ink)}
+.fix{display:grid;gap:2px 28px;padding:16px 0 18px;border-bottom:1px solid var(--rule)}
+.fix p{margin:0}
+.was{font-family:var(--serif);font-size:19px;color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:2px}
+.is{font-family:var(--serif);font-size:19px;color:var(--form-ink)}
+.is::before{content:"✓";display:inline-block;width:1.4em;font-family:var(--sans)}
+.why{font-size:14.5px;color:var(--ink-2)}
+@media (min-width:720px){.fix{grid-template-columns:1fr 1fr}.why{grid-column:2;padding-left:1.4em}}
+
+/* Past questions inside a note */
+.pq{display:grid;grid-template-columns:34px 1fr;gap:0 12px;padding:22px 0;border-bottom:1px solid var(--rule)}
+.pq:first-child{border-top:1px solid var(--ink)}
+.pq-n{font-family:var(--serif);font-size:20px;line-height:1.5;color:var(--form)}
+.pq-q{margin:0;font-family:var(--serif);font-size:19px;line-height:1.6}
+.pq .tags{margin:8px 0 14px}
+.opts2{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.opts2 li{display:flex;align-items:center;gap:10px;font-size:16.5px;color:var(--ink-2);min-width:0}
+.opts2 .bub{--s:27px}
+.opts2 li.ok{color:var(--ink)}
+.opts2 li.ok .bub{background:var(--ok);border-color:var(--ok);color:var(--paper)}
+.pq-x{margin:14px 0 0;font-size:15px;color:var(--ink-2)}
+.pq-x b{font-weight:500;color:var(--ok)}
+.reveal{display:none;margin-top:14px}
+.hide-ans .pq:not(.shown) li.ok{color:var(--ink-2)}
+.hide-ans .pq:not(.shown) li.ok .bub{background:transparent;border-color:var(--form);color:var(--form-ink)}
+.hide-ans .pq:not(.shown) .pq-x{display:none}
+.hide-ans .pq:not(.shown) .reveal{display:inline-block}
+#past .btn{margin-top:32px}
+@media (max-width:520px){.opts2{grid-template-columns:1fr}}
+
+/* ---------- question paper ---------- */
+.paper{margin:28px 0 72px;padding:34px clamp(18px,4vw,60px) 44px;background:var(--sheet);border:1px solid var(--rule);
+  box-shadow:0 1px 0 var(--rule),0 22px 40px -32px rgba(40,30,10,.45)}
+.paper-head{text-align:center;padding-bottom:18px;border-bottom:1.5px solid var(--ink)}
+.paper-head .pre{margin:0;font-size:14px;font-stretch:92%;color:var(--ink-3)}
+.paper-head h1{font-family:var(--serif);font-size:clamp(28px,4vw,42px);line-height:1.3;margin:6px 0 4px}
+.paper-head .lvl{margin:0;font-family:var(--serif);font-size:19px;color:var(--ink-2)}
+.paper-facts{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 18px;margin-top:18px;font-size:14.5px}
+.paper-facts span{white-space:nowrap}
+@media (max-width:560px){.paper-facts{justify-content:center}}
+.paper-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:14px 0;border-bottom:1px solid var(--rule);margin-bottom:22px}
+.paper-cols{column-gap:56px}
+@media (min-width:960px){.paper-cols{columns:2;column-rule:1px solid var(--rule)}}
+.pp-sec{break-inside:avoid;break-after:avoid;margin:10px 0 6px;padding:8px 0 6px;border-bottom:1px solid var(--ink);font-family:var(--serif);font-size:19px}
+.pp-sec small{font-family:var(--sans);font-size:13px;color:var(--ink-3);margin-left:8px}
+.pp-sec:first-child{margin-top:0}
+.pp{break-inside:avoid;padding:12px 0 14px}
+.pp-q{display:flex;gap:8px;margin:0 0 8px;font-family:var(--serif);font-size:18px;line-height:1.6}
+.pp-q b{flex:none;min-width:1.8em;font-weight:400}
+.pp .code{margin:0 0 10px 1.8em;padding:10px 14px;font-size:13.5px}
+.pp ol{list-style:none;margin:0;padding:0 0 0 1.8em;display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;font-size:16px}
+.pp li{display:flex;gap:6px;align-items:baseline;color:var(--ink-2)}
+.pp li i{flex:none;display:inline-grid;place-items:center;width:1.55em;height:1.55em;margin:-.15em 0;border-radius:50%;font-style:normal;color:var(--ink)}
+.pp li.ok{color:var(--ink)}
+.pp li.ok i{box-shadow:0 0 0 1.5px var(--ok);color:var(--ok)}
+.pp .x{margin:8px 0 0 1.8em;font-size:14.5px;color:var(--ink-2)}
+.pp .x b{font-weight:500;color:var(--ok)}
+.hide-ans .pp:not(.shown) li.ok{color:var(--ink-2)}
+.hide-ans .pp:not(.shown) li.ok i{box-shadow:none;color:var(--ink)}
+.hide-ans .pp:not(.shown) .x{display:none}
+.pp .reveal{margin:8px 0 0 1.8em}
+.hide-ans .pp:not(.shown) .reveal{display:inline-flex}
+/* A caution where the book's answer is debated: a highlighter mark in the margin, as a teacher would leave it */
+.warn{display:block;margin-top:6px;padding-left:10px;border-left:3px solid var(--hl);color:var(--ink-2)}
+.pp .x .warn b,.rv-x .warn b{margin-right:6px;font-weight:600;color:var(--ink)}
+/* A long chapter: blocks of 20, and a sticky bar inside the sheet to jump between them */
+.secbar.in-paper{margin:0 calc(-1 * clamp(18px,4vw,60px));padding:0 clamp(18px,4vw,60px);background:var(--sheet);border-top:0;border-bottom-color:var(--rule-2)}
+.secbar .in{display:flex;align-items:center;height:52px}
+.pp-blk{padding-top:26px}
+.pp-blk .pp-sec{margin:0 0 10px}
+/* Note: the practice block at the end, and working blocks that follow one another */
+.note-acts{display:flex;flex-wrap:wrap;gap:12px 14px;margin:20px 0 0}
+.note-links{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--ink)}
+.note-links li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 18px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.note-links a{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--form-ink)}
+.note-links span{font-size:13.5px;color:var(--ink-3)}
+.note .work+.work,.note .groups+.groups{margin-top:26px}
+.note .truth{margin:6px 0 14px}
+.note .bcalc{margin-top:12px}
+.note .expand+.expand{margin-top:4px}
+.note .work+.prose,.note .groups+.prose,.note .handsum+.prose,.note .bcalc+.prose,.note .rt+.prose{margin-top:20px}
+.note .rng{margin-top:26px}
+/* ---------- chapter notes built from past papers ---------- */
+.blk-no small{display:block;margin-top:2px;font-size:12.5px;color:var(--ink-3)}
+/* The exam map: topics × exams, drawn as an answer sheet. A filled bubble = that year's paper asked the topic. */
+.omrgrid{border-collapse:collapse;font-size:13px;margin:4px 0 2px}
+.omrgrid th,.omrgrid td{padding:5px 3px;text-align:center;border-bottom:1px solid var(--rule)}
+.omrgrid thead th{font-weight:400;color:var(--ink-3);border-bottom-color:var(--ink);line-height:1.15;vertical-align:bottom}
+.omrgrid thead b{display:block;font-family:var(--serif);font-weight:400;font-size:15px;color:var(--ink)}
+.omrgrid thead small{font-size:11px}
+.omrgrid tbody th{position:sticky;left:0;z-index:1;padding-right:12px;text-align:left;white-space:nowrap;font-weight:400;background:var(--paper)}
+.omrgrid thead th:first-child{position:sticky;left:0;z-index:1;text-align:left;background:var(--paper)}
+.omrgrid tbody th a{display:block;padding:6px 0;font-family:var(--serif);font-size:15.5px;color:var(--ink);text-decoration:none}
+.omrgrid tbody th{padding-top:0;padding-bottom:0}
+.omrgrid tbody th a:hover{color:var(--form-ink);text-decoration:underline}
+.omrgrid .bub{--s:15px;border-width:1.5px;vertical-align:middle}
+.omrgrid .bub:not(.on){border-color:var(--rule-2)}
+.omrgrid td.n,.omrgrid th.n{padding:5px 14px 5px 4px;text-align:right;white-space:nowrap;font-size:15px;color:var(--ink);border-right:1px solid var(--rule)}
+@media (max-width:719px){
+  #prevGrid{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  .omrgrid .bub{--s:13px}
+  .omrgrid td{padding:5px 2px}
+}
+.grid-hint{display:none}
+@media (max-width:719px){.grid-hint{display:inline}}
+.omrgrid td.n small{font-size:11.5px;color:var(--ink-3)}
+/* A dated list down a rule, each date on a bubble */
+.tl{list-style:none;margin:8px 0 0 6px;padding:0;border-left:1.5px solid var(--ink)}
+.tl li{position:relative;display:grid;grid-template-columns:7.2em minmax(0,1fr);gap:2px 14px;padding:9px 0 9px 20px;border-bottom:1px solid var(--rule)}
+.tl li::before{content:"";position:absolute;left:-7px;top:17px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:1.5px solid var(--form)}
+.tl span{padding-top:3px;font-size:14px;color:var(--form-ink)}
+.tl p{margin:0;font-family:var(--serif);font-size:17px;line-height:1.65}
+.tl p b{font-family:var(--sans);font-weight:600;font-size:.93em}
+@media (max-width:560px){.tl li{grid-template-columns:none}}
+/* A section's past written questions */
+.prev-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 14px;margin:34px 0 0;padding-top:10px;border-top:1.5px solid var(--ink);font-weight:600;font-size:15.5px}
+.prev-h span{font-weight:400;font-size:13.5px;color:var(--ink-3)}
+.prev{list-style:none;margin:0;padding:0}
+.prev li{padding:11px 0;border-bottom:1px solid var(--rule)}
+.prev li>p{margin:0;font-family:var(--serif);font-size:17px;line-height:1.65}
+.prev .prev-m{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:5px;font-family:var(--sans);font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+.prev-m .xt{margin:0}
+.prev-m a{color:var(--form-ink)}
+.prev-more summary{display:flex;align-items:center;gap:10px;min-height:46px;cursor:pointer;list-style:none;font-size:14.5px;color:var(--form-ink);border-bottom:1px solid var(--rule)}
+.prev-more summary::-webkit-details-marker{display:none}
+.prev-more summary::before{content:"+";display:inline-grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--form);border-radius:50%;font-size:14px;line-height:1}
+.prev-more[open] summary::before{content:"−"}
+.prev-more summary span{color:var(--ink-3);font-size:13px}
+.practice{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin:18px 0 0}
+.practice .btn span{margin-left:6px;font-size:.88em;opacity:.8}
+.practice>a{font-size:14.5px;color:var(--form-ink)}
+.scroll>.wide-t{min-width:560px}
+.note .scroll+.pts,.note .scroll+.prose{margin-top:18px}
+.note .rt+.rt,.note .rt+.pts,.note .rt+.prose{margin-top:18px}
+/* Block diagrams in notes */
+.flow .cpu{fill:none;stroke:var(--form);stroke-width:1.4;stroke-dasharray:6 5}
+.fig.wide.org svg{min-width:560px;max-width:640px}
+.flow.hdd svg{max-width:380px}
+.flow .trk{fill:none;stroke:var(--rule-2);stroke-width:1.2}
+.flow .trk.on{stroke:var(--form);stroke-width:1.6}
+.flow .sect{fill:var(--form-wash);stroke:var(--form);stroke-width:1.6}
+.flow .arm{fill:none;stroke:currentColor;stroke-width:5;stroke-linecap:round}
+.flow .head{fill:var(--ink)}
+.flow.hdd .fa{stroke-width:1;stroke:var(--ink-3)}
+/* A signal to read: drawn in ink, the baseline dotted */
+.wave{display:block;margin:4px 0 10px 1.8em;max-width:100%;height:auto;overflow:visible}
+.wave path{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:miter}
+.wave .wave-base{stroke:var(--rule-2);stroke-width:1;stroke-dasharray:2 3}
+.qpane .wave,.rv .wave{margin-left:0}
+.qpane .wave{margin:0 0 18px;transform-origin:left top;width:auto;height:48px}
+.paper-acts{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+.toc li{display:flex}
+.toc li>.row{flex:1;min-width:0}
+.toc .nl{flex:none;display:flex;align-items:center;padding-left:16px;font-size:14px;color:var(--form-ink);text-decoration:none}
+.toc .nl:hover{text-decoration:underline}
+.paper-end{margin:26px 0 0;padding-top:14px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink-3)}
+.ch-nav{display:flex;justify-content:space-between;gap:12px;margin-top:14px}
+.ch-nav a{display:inline-flex;align-items:center;min-height:44px;color:var(--form-ink)}
+@media (max-width:420px){.pp ol{grid-template-columns:1fr}}
+
+/* ---------- written paper with model answers ---------- */
+/* The written exam's own object is the answer script (খাতা): every answer sits against a printed double
+   margin line, each part is headed by the marks it carries (in a bubble), and figures are drawn, not pasted. */
+.w-tips{list-style:none;display:flex;flex-wrap:wrap;gap:6px 26px;margin:22px 0 0;padding:0;font-size:14.5px;color:var(--ink-2)}
+.w-tips li{display:flex;align-items:flex-start;gap:9px;line-height:1.55}
+.w-tips li::before{content:"";flex:none;width:8px;height:8px;margin-top:.5em;border-radius:50%;background:var(--form)}
+.w-tips b{font-weight:500;color:var(--ink)}
+.wbar nav{gap:4px}
+.wbar nav a{padding:9px 4px}
+.wbar nav a.on::after{left:4px;right:4px}
+.wbar .bub{--s:30px;font-size:14px}
+.wbar nav a:hover .bub:not(.on){background:var(--form-wash)}
+
+/* The question paper, as printed, each line leading to its answer */
+.qp{margin:30px 0 0;padding:20px clamp(16px,3vw,32px) 8px;background:var(--sheet);border:1px solid var(--rule);
+  box-shadow:0 1px 0 var(--rule),0 22px 40px -34px rgba(20,30,60,.45)}
+.qp-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
+.qp-pre{margin:0;font-size:13.5px;color:var(--ink-3)}
+.qp-t{margin:2px 0 0;font-family:var(--serif);font-size:20px;line-height:1.4}
+.qp-st{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;font-size:14px;color:var(--ink-2)}
+.qp-st span{display:inline-flex;align-items:center;gap:7px}
+.qp-st .bub{--s:13px}
+.qp-rule{margin:10px 0 2px;font-size:14px;color:var(--ink-2)}
+.qp-rule b{font-weight:500;color:var(--ink)}
+.qp-list{list-style:none;margin:0;padding:0}
+.qp-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:2px 14px;align-items:baseline;padding:13px 0;border-top:1px solid var(--rule);text-decoration:none}
+.qp-list li:first-child .qp-row{border-top:0}
+.qp-n{font-family:var(--serif);font-size:18px;color:var(--form)}
+.qp-q{font-family:var(--serif);font-size:17.5px;line-height:1.65}
+.qp-m{font-size:14px;color:var(--ink-3);white-space:nowrap;text-align:right}
+.qp-s{grid-column:2/-1;font-size:14px;color:var(--form-ink)}
+.qp-row.wip .qp-s{color:var(--ink-3)}
+.qp-row:hover .qp-q{color:var(--form-ink)}
+@media (min-width:760px){.qp-row{grid-template-columns:32px minmax(0,1fr) 96px 104px}.qp-s{grid-column:auto;text-align:right}}
+
+/* One question and its answer: margin (number, marks, time) · the answer · margin notes */
+.wq{display:grid;gap:14px;padding-top:64px}
+.wq-m{display:flex;align-items:baseline;gap:14px;padding-top:14px;border-top:1px solid var(--ink)}
+.wq-no{font-family:var(--serif);font-size:46px;line-height:1;color:var(--form)}
+.wq-meta{font-size:13.5px;line-height:1.55;color:var(--ink-3)}
+.wq-main{min-width:0}
+.wq-q{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:baseline;padding:16px 18px;background:var(--sheet);border:1px solid var(--rule)}
+.wq-q p{margin:0;font-family:var(--serif);font-size:20px;line-height:1.7}
+.wq-text{min-width:0}
+.wq-text p+p,.wq-text p+.wparts,.wq-text .wparts+p{margin-top:6px}
+/* A question's parts (ক, খ …) with their own marks */
+.wparts{list-style:none;margin:0;padding:0;font-family:var(--serif);font-size:19px;line-height:1.7}
+.wparts li{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:0 8px;align-items:baseline}
+.wparts li+li{margin-top:4px}
+.wparts b{font-weight:400;color:var(--form-ink)}
+.wparts i{font-style:normal;font-family:var(--sans);font-size:13.5px;color:var(--ink-3);white-space:nowrap}
+/* "অথবা" between a question and its choice, set the way it is printed: centred, between two rules */
+.wq-text .wor{display:flex;align-items:center;gap:12px;margin:10px 0 8px;font-family:var(--sans);font-size:14px;color:var(--ink-3)}
+.wq-text .wor::before,.wq-text .wor::after{content:"";flex:1;border-top:1px dashed var(--rule-2)}
+.wq-note{margin-top:10px !important;padding-left:10px;border-left:3px solid var(--hl);font-family:var(--sans) !important;font-size:14px !important;line-height:1.6 !important;color:var(--ink-2)}
+.qp-or{display:block;margin-top:3px;font-family:var(--sans);font-size:14px;line-height:1.55;color:var(--ink-3)}
+.qp-sec{padding:16px 0 4px;font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--form-ink);border-top:1px solid var(--rule)}
+.qp-list li.qp-sec:first-child{border-top:0;padding-top:6px}
+.qp-sec+li .qp-row{border-top:0}
+.qp-warn{padding-left:10px;border-left:3px solid var(--hl)}
+.wq-marks{font-size:14px;color:var(--ink-2);white-space:nowrap}
+.wq-ans{margin-top:24px;padding-left:22px;border-left:4px double var(--form-line)}   /* the answer script's margin line */
+.wq-foot{margin:22px 0 0;padding-left:26px}
+.wq-foot a{display:inline-flex;align-items:center;min-height:44px;color:var(--form-ink);font-size:15px}
+.wq .reveal{margin:16px 0 0}
+.hide-ans .wq:not(.shown) .wq-ans,.hide-ans .wq:not(.shown) .wq-side{display:none}
+.hide-ans .wq:not(.wip):not(.shown) .reveal{display:inline-flex}
+.wq-wip{display:flex;align-items:flex-start;gap:14px;margin:0;padding:16px 18px;border:1.5px dashed var(--rule-2);font-size:15.5px;line-height:1.6;color:var(--ink-2)}
+.wq-wip .bub{--s:26px;border-style:dashed;margin-top:2px}
+.wq-wip b{display:block;font-family:var(--serif);font-weight:400;font-size:19px;color:var(--ink)}
+@media (min-width:1120px){
+  .wq{grid-template-columns:120px minmax(0,700px) minmax(0,1fr);gap:0 48px}
+  .wq-m{flex-direction:column;gap:10px}
+  .wq-main{padding-top:14px;border-top:1px solid var(--ink)}
+  .wq-side{margin-top:128px;align-self:start}
+}
+@media (max-width:1119px){.wq{max-width:760px}}
+@media (min-width:900px) and (max-width:1119px){
+  .wq{max-width:none;grid-template-columns:minmax(0,1fr) 220px;gap:14px 40px}
+  .wq-m{grid-column:1/-1}
+  .wq-side{margin-top:114px;align-self:start}
+}
+
+/* Parts of an answer, each headed by its marks */
+.split-note{margin:0 0 18px;font-size:14px;color:var(--ink-3)}
+/* "অথবা" inside an answer: the second choice's answer follows, set off the way the paper prints it */
+.ans-or{display:flex;align-items:center;gap:14px;margin:34px 0 22px;font-family:var(--serif);font-size:19px;color:var(--form-ink)}
+.ans-or::before,.ans-or::after{content:"";flex:1;border-top:1.5px dashed var(--form-line)}
+.ans-or+.part,.ans-or+.split-note{margin-top:0}
+.inc-note{margin:0 0 14px;font-size:14px;color:var(--ink-3)}
+.part{margin-top:30px}
+.part:first-child,.split-note+.part{margin-top:0}
+.part-h{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding-bottom:9px;border-bottom:1px solid var(--rule);
+  font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.45}
+.part-h>span{flex:1;min-width:0}
+.part-h .mk{--s:36px;font-size:16px;font-weight:600;border-width:1.5px}
+.sub-h{display:flex;align-items:baseline;gap:10px;margin:24px 0 8px;font-family:var(--serif);font-weight:400;font-size:18.5px;line-height:1.5}
+.sub-h>span:first-child{font-family:var(--sans);font-size:13.5px;color:var(--form-ink)}
+.wq-ans .work,.wq-ans .groups{margin-bottom:18px}
+.defn{margin:0 0 14px;padding:12px 16px;background:var(--sheet);border-left:3px solid var(--form);font-family:var(--serif);font-size:18px;line-height:1.8}
+.defn b{display:block;margin-bottom:2px;font-family:var(--sans);font-weight:500;font-size:13px;color:var(--form-ink)}
+.wq .prose{font-size:18px;max-width:none}
+.pts{margin:0 0 16px;padding-left:1.2em;font-family:var(--serif);font-size:17.5px;line-height:1.8}
+.pts li{margin:5px 0}
+.pts li::marker{color:var(--form)}
+.pts b{font-family:var(--sans);font-weight:600;font-size:.93em;color:var(--ink)}
+.pts-sub{display:block;margin-top:2px;font-size:16px;line-height:1.75;color:var(--ink-2)}
+.ov{display:inline-block;border-top:1.5px solid currentColor;padding-top:1px;line-height:1.1}
+.ov:has(.ov){padding-top:3.5px}   /* a bar over bars: keep the two lines apart */
+.final{display:inline-block;margin:16px 0 0;padding:10px 16px;border:1.5px solid var(--ok);font-family:var(--serif);font-size:19px;line-height:1.6}
+.final b{margin-right:12px;font-family:var(--sans);font-weight:500;font-size:13px;color:var(--ok)}
+
+/* Figures */
+.fig{margin:22px 0}
+.fig figcaption{margin-top:8px;font-size:13.5px;color:var(--ink-3)}
+.fig svg{display:block;width:100%;height:auto;color:var(--ink);overflow:visible}
+.fig .gb{fill:var(--sheet);stroke:currentColor;stroke-width:1.6}
+.fig .w{fill:none;stroke:currentColor;stroke-width:1.4}
+.fig .j{fill:currentColor}
+.fig svg text{font-family:var(--mono);font-size:14px;fill:currentColor}
+.fig svg text.cap{font-family:var(--sans);font-size:13px;fill:var(--form-ink)}
+/* Wide circuit drawings keep a readable size on phones and scroll sideways instead of shrinking. */
+.fig.wide{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.fig.wide svg{min-width:540px}
+.fig.wide.mid svg{max-width:600px}      /* a narrower drawing stays at its drawn size on wide screens */
+.gates{display:flex;flex-wrap:wrap;align-items:center;gap:14px 36px;margin:18px 0 16px}
+.gate-sym{margin:0;width:190px}
+.truth{border-collapse:collapse;font-family:var(--mono);font-size:15px}
+.truth th,.truth td{padding:5px 14px;text-align:center;border-bottom:1px solid var(--rule)}
+.truth th{font-family:var(--sans);font-weight:500;font-size:13px;color:var(--ink-3);border-bottom-color:var(--ink)}
+.truth td:last-child{color:var(--form-ink);font-weight:600}
+.trace{margin:4px 0 0}
+.trace td:last-child{font-family:var(--sans);font-weight:500}
+.trace th,.trace td{white-space:nowrap}
+/* Very narrow phones: let comparison tables and side-by-side working give up a little room */
+@media (max-width:400px){
+  .rt.cmp th,.rt.cmp td{padding-right:10px}
+  .rt.cmp td:first-child{font-size:17px;white-space:normal}
+  .work{gap:0 12px}
+  .trace th,.trace td{padding-left:8px;padding-right:8px}
+}
+@media (max-width:340px){.readup span{display:none}}   /* the arrow alone; the text above says which way to read */
+
+/* Classification drawn as a tree */
+.tree,.tree ul{list-style:none;margin:0;padding:0}
+.tree ul{margin-left:12px;padding-left:22px;border-left:1.5px solid var(--rule-2)}
+.tree li{position:relative;padding:7px 0 3px}
+.tree ul>li::before{content:"";position:absolute;left:-22px;top:21px;width:16px;border-top:1.5px solid var(--rule-2)}
+.tree span{font-family:var(--serif);font-size:17.5px;line-height:1.5}
+.tree small{margin-left:6px;font-family:var(--sans);font-size:12.5px;color:var(--ink-3)}
+.tree .t-root{display:inline-block;padding:3px 14px;border:1.5px solid var(--form);font-size:18.5px}
+.tree .leaf{display:block;font-family:var(--sans);font-size:14.5px;color:var(--ink-2)}
+
+/* Memory hierarchy */
+.pyr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 16px;max-width:560px}
+.pyr-bars{display:grid;gap:4px;justify-items:center}
+.pyr-bars span{width:var(--w);padding:7px 8px;text-align:center;font-size:14.5px;line-height:1.4;
+  background:color-mix(in srgb,var(--form) var(--k),var(--sheet));border:1px solid var(--form-line)}
+.pyr-axis{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0 2px 14px;
+  border-left:1.5px solid var(--ink);font-size:13px;line-height:1.4;color:var(--ink-3);max-width:7.5em}
+.pyr-axis::before{content:"";position:absolute;left:-5.5px;top:-2px;border:5px solid transparent;border-bottom:8px solid var(--ink);border-top:0}
+
+/* Binary working, written the way it is done by hand */
+.bcalc{display:grid;grid-template-columns:auto 1fr;gap:5px 24px;align-items:baseline;margin:6px 0 14px}
+.bcalc code{font-size:20px;letter-spacing:.12em;text-align:right;white-space:pre}
+.bcalc span{font-size:15px;color:var(--ink-2)}
+.bcalc span b{font-weight:600;color:var(--ink)}
+.bcalc .add{padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
+.bcalc .res{font-weight:600}
+.carry{font-style:normal;color:var(--bad-ink);text-decoration:line-through;text-decoration-thickness:2px}
+.carry.keep{color:var(--form-ink);text-decoration:none}   /* a carry that is kept and moves on, not dropped */
+@media (max-width:480px){
+  .bcalc{gap:5px 14px}
+  .bcalc code{font-size:17px;letter-spacing:.08em}
+}
+/* The binary point in a row of 4-bit groups */
+.groups .gpt code{padding:0 0 8px;border:0}
+.groups .gpt code::before,.groups .gpt code::after{display:none}
+
+/* Derivations: one step per line, the rule used written small beside it */
+.eqs{list-style:none;margin:4px 0 14px;padding:0;font-family:var(--mono);font-size:clamp(15.5px,2vw,18px);line-height:1.75}
+.eqs li{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 16px;padding:3px 0}
+.eqs li+li{padding-left:2ch}
+.eqs small{font-family:var(--sans);font-size:13.5px;color:var(--ink-3)}
+
+/* A small note under a table cell's main word */
+.rt td small{display:block;font-family:var(--sans);font-size:12.5px;line-height:1.5;color:var(--ink-3);white-space:normal}
+
+/* Five generations on one timeline; it turns vertical on phones */
+.era{list-style:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0 14px;margin:20px 0 0;padding:0;border-top:1.5px solid var(--ink)}
+.era li{position:relative;padding:18px 0 0}
+.era li::before{content:"";position:absolute;top:-7px;left:0;width:12px;height:12px;border-radius:50%;background:var(--paper);border:1.5px solid var(--form)}
+.era span{display:block;font-size:13px;color:var(--form-ink)}
+.era b{display:block;margin-top:2px;font-family:var(--serif);font-weight:400;font-size:17px;line-height:1.45}
+.era small{display:block;margin-top:4px;font-size:13px;color:var(--ink-3)}
+@media (max-width:640px){
+  .era{grid-template-columns:none;margin-left:6px;border-top:0;border-left:1.5px solid var(--ink)}
+  .era li{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px;padding:0 0 14px 20px}
+  .era li:last-child{padding-bottom:2px}
+  .era li::before{top:5px;left:-7px}
+  .era b{margin:0}
+  .era small{flex-basis:100%;margin:0}
+}
+
+/* A short left-to-right chain of steps (data → processing → information) */
+.chain{list-style:none;display:flex;flex-wrap:wrap;align-items:stretch;gap:10px 0;margin:18px 0 6px;padding:0}
+.chain li{position:relative;display:flex;flex-direction:column;justify-content:center;min-width:8.5em;padding:10px 16px;border:1.5px solid var(--ink);background:var(--sheet)}
+.chain li+li{margin-left:34px}
+.chain li+li::before{content:"";position:absolute;left:-29px;top:50%;width:22px;border-top:1.5px solid var(--ink)}
+.chain li+li::after{content:"";position:absolute;left:-12px;top:calc(50% - 5px);border:5px solid transparent;border-left:7px solid var(--ink);border-right:0}
+.chain li:nth-child(2){border-color:var(--form);background:var(--form-wash)}
+.chain b{font-family:var(--serif);font-weight:400;font-size:18px}
+.chain small{font-family:var(--mono);font-size:13px;color:var(--ink-3)}
+@media (max-width:560px){.chain{flex-direction:column}.chain li+li{margin:22px 0 0}.chain li+li::before{left:50%;top:-19px;width:0;height:14px;border-top:0;border-left:1.5px solid var(--ink)}.chain li+li::after{left:calc(50% - 4.25px);top:-8px;border:5px solid transparent;border-top:7px solid var(--ink);border-bottom:0}}
+/* 0–9 in BCD: one row of ten on wide screens, two rows of five on phones */
+.g16.g10{grid-template-columns:repeat(5,1fr)}
+@media (min-width:720px){.g16.g10{grid-template-columns:repeat(10,1fr)}}
+/* Layers stacked top to bottom, one highlighted */
+.layers{display:grid;max-width:460px;border:1.5px solid var(--ink)}
+.layers span{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 14px;padding:9px 14px;font-family:var(--serif);font-size:17.5px;line-height:1.45}
+.layers span+span{border-top:1px solid var(--rule-2)}
+.layers small{font-family:var(--sans);font-size:13px;color:var(--ink-3)}
+.layers .hl{padding-left:10px;background:var(--form-wash);border-left:4px solid var(--form)}
+
+/* Step-by-step algorithm */
+.algo{list-style:none;counter-reset:st;margin:0 0 16px;padding:0;font-family:var(--serif);font-size:17.5px;line-height:1.7;border-top:1px solid var(--ink)}
+.algo li{counter-increment:st;display:grid;grid-template-columns:62px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.algo li::before{content:"ধাপ " counter(st,bengali);padding-top:3px;font-family:var(--sans);font-size:14px;color:var(--form-ink)}
+
+/* Flowchart */
+.flow svg{max-width:460px}
+.flow .fs{fill:var(--sheet);stroke:currentColor;stroke-width:1.6}
+.flow .fd{fill:var(--form-wash);stroke:var(--form)}
+.flow .fa{fill:none;stroke:currentColor;stroke-width:1.5}
+.flow .ah{fill:currentColor}
+.flow svg text{font-family:var(--sans);font-size:16px;text-anchor:middle;dominant-baseline:middle}
+.flow svg text.yn{font-size:14px;fill:var(--form-ink)}
+.flow svg text.sm{font-size:14px;fill:var(--ink-3)}
+.flow svg text.big{font-size:22px;font-weight:600;fill:var(--form-ink)}
+.flow .fa.dash{stroke-dasharray:5 4}
+.flow .busl{fill:none;stroke:var(--form-line);stroke-width:7;stroke-linecap:round}
+.ans-body .expand+.prose{margin-top:12px}
+.flow.syms td{vertical-align:middle}
+.flow.syms td svg{width:84px;max-width:84px}
+.flow.rectflow svg{max-width:320px}
+/* The block diagram is drawn wider than the flowchart; on phones it keeps a readable size and scrolls sideways. */
+.fig.wide.alu svg{min-width:430px;max-width:460px}
+
+/* Home: written papers list */
+.ledger .na{color:var(--ink-3)}
+.wl-n{display:block;font-size:13px;color:var(--ink-3)}
+.wl-ok{font-size:14.5px;color:var(--ok)}
+.ledger td.wl-st{white-space:nowrap;padding-right:0}
+
+/* ---------- exam setup ---------- */
+.setup .doc-head{padding-bottom:20px}
+.fsec{display:grid;gap:14px;padding:26px 0;border-top:1px solid var(--rule)}
+.fsec:first-child{border-top-color:var(--ink)}
+.fsec-l{display:flex;flex-wrap:wrap;align-items:baseline;align-content:flex-start;align-self:start;gap:0 12px;margin:0;font-family:var(--serif);font-size:23px;line-height:1.4}
+.fsec-l span{font-family:var(--sans);font-size:14px;color:var(--form-ink)}
+.fsec-l small{flex-basis:100%;font-family:var(--sans);font-size:14px;color:var(--ink-3)}
+@media (min-width:880px){.fsec{grid-template-columns:260px 1fr;gap:48px}.fsec-l small{padding-left:0}}
+.pick{display:flex;flex-wrap:wrap;gap:10px 30px}
+.pick label{position:relative;display:inline-flex;align-items:center;gap:12px;min-height:44px;min-width:44px;font-size:17px;cursor:pointer}
+.pick input{position:absolute;opacity:0;pointer-events:none}
+.pick .bub{--s:30px;font-size:14px}
+.pick label:hover .bub{background:var(--form-wash)}
+.pick input:checked+.bub{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.pick input:focus-visible+.bub,.pick .box,.pick .box svg,.pick input:checked+.box,.timebox{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.digits{display:flex;gap:4px}
+.digits i{display:grid;place-items:center;width:40px;height:48px;border:1.5px solid var(--form);font-style:normal;font-family:var(--serif);font-size:26px;line-height:1;padding-top:4px}
+.step{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--rule-2);border-radius:50%;background:none;font-size:20px;cursor:pointer}
+.step:hover{border-color:var(--ink);background:var(--sunk)}
+.hint{margin:10px 0 0;font-size:14.5px;color:var(--ink-3)}
+.timebox .hint{margin:0 0 0 8px}
+.hint:empty{display:none}
+.summary{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;
+  margin-top:8px;padding:16px 0 calc(16px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--ink)}
+.summary p{margin:0;font-family:var(--serif);font-size:19px}
+.summary p span{color:var(--ink-3)}
+@media (max-width:620px){
+  .summary{flex-wrap:nowrap;gap:12px;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+  .summary p{flex:1;min-width:0;font-size:15.5px;line-height:1.4}
+  .summary p span{display:none}
+  .summary .btn{flex:none;min-height:46px;padding:0 16px}
+}
+.setup{padding-bottom:40px}
+
+/* One-tap presets: drawn like the options of a question; choosing one fills its bubble and starts the exam. */
+.quick{max-width:760px;margin:4px 0 0}
+.quick-h{font-family:var(--serif);font-size:clamp(23px,2.6vw,28px);line-height:1.4;margin:0 0 14px}
+.quick-opt{min-height:78px;padding:14px 8px 14px 2px}
+.quick-opt .otext{display:flex;flex-direction:column;gap:2px}
+.quick-opt b{font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.4;color:var(--ink)}
+.quick-opt small{font-size:14.5px;line-height:1.5;color:var(--ink-3)}
+.quick-opt .go{flex:none;font-size:21px;color:var(--form);transition:transform .15s}
+.quick-opt:hover .go{transform:translateX(3px)}
+.quick-opt.on{background:var(--form-wash)}
+.quick-opt:disabled{cursor:default}
+.quick-opt:disabled:hover{background:none}
+.quick-opt:disabled b{color:var(--ink-3)}
+.quick-opt:disabled .bub{border-style:dashed;border-color:var(--rule-2);color:var(--ink-3)}
+.quick-opt:disabled .go{visibility:hidden}
+.quick-note{list-style:none;padding:12px 0 0;font-size:13.5px;color:var(--ink-3)}
+
+/* The full form, folded under "নিজে সাজান". */
+.custom{margin-top:40px;border-top:1px solid var(--ink)}
+.custom>summary{display:grid;grid-template-columns:28px 1fr;gap:2px 6px;align-items:baseline;padding:18px 0 20px;cursor:pointer;list-style:none}
+.custom>summary::-webkit-details-marker{display:none}
+.custom>summary::before{content:"+";grid-row:1;font-size:24px;line-height:1;color:var(--form)}
+.custom[open]>summary::before{content:"−"}
+.custom-t{font-family:var(--serif);font-size:23px;line-height:1.4}
+.custom-s{grid-column:2;font-size:14.5px;color:var(--ink-3)}
+.custom>summary:hover .custom-t{color:var(--form-ink)}
+.custom .fsec:first-child{border-top-color:var(--rule)}
+
+/* ---------- exam ---------- */
+body[data-screen="exam"] .top{display:none}
+.ebar{position:sticky;top:0;z-index:30;background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
+.ebar .btn{background:var(--on-bar);border-color:var(--on-bar);color:var(--bar)}
+.ebar .btn:hover{background:var(--on-bar-2);border-color:transparent}
+.ebar .wrap{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:20px;height:66px}
+.ebar-l{min-width:0}
+.ebar-title{display:block;font-size:13px;font-stretch:90%;color:var(--on-bar-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ebar-q{font-family:var(--serif);font-size:20px;line-height:1.3}
+.ebar-q b{font-weight:400}
+.ebar-t{text-align:right;line-height:1.1}
+.clock-l{display:block;font-size:13px;font-stretch:90%;color:var(--on-bar-3)}
+.clock{font-size:27px;font-weight:500;letter-spacing:0}
+.clock .d{display:inline-block;width:.62em;text-align:center}
+.clock .colon{display:inline-block;width:.3em;text-align:center}
+.clock.low{color:var(--clock-low)}
+.eprog{height:3px;background:transparent}
+.eprog span{display:block;height:100%;width:0;background:var(--on-bar);transition:width .25s}
+.ebody{display:grid;gap:40px;padding-top:34px;padding-bottom:130px}
+/* From 760px (tablets) the answer sheet sits beside the question; below that it's a drawer. */
+@media (min-width:760px){.ebody{grid-template-columns:minmax(0,1fr) 300px;gap:44px;align-items:start;padding-bottom:80px}}
+@media (min-width:1100px){.ebody{grid-template-columns:minmax(0,1fr) 352px;gap:72px}}
+.qhead{display:flex;align-items:baseline;gap:16px;margin-bottom:16px}
+.qno{font-family:var(--serif);font-size:60px;line-height:.9;color:var(--form)}
+.qsubj{font-size:14px;font-stretch:90%;color:var(--ink-3)}
+.qflag{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--form-ink)}
+.qflag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--form)}
+.qtext{font-family:var(--serif);font-size:clamp(23px,2.7vw,30px);line-height:1.55;margin:0 0 26px;max-width:28em}
+.qpane .code{margin:-8px 0 26px;font-size:15.5px}
+.opts{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.opt{display:flex;align-items:center;gap:18px;width:100%;min-height:62px;padding:12px 6px 12px 2px;border:0;border-bottom:1px solid var(--rule);
+  background:none;text-align:left;cursor:pointer;font-size:18.5px;line-height:1.5;transition:background-color .12s}
+.opt:hover{background:var(--sunk)}
+.opt:hover .bub:not(.on){border-color:var(--ink);color:var(--ink)}
+.opt .bub{--s:34px}
+.opt .otext{flex:1;min-width:0}
+.opt kbd{opacity:0;transition:opacity .12s}
+.opt:hover kbd,.opt:focus-visible kbd{opacity:1}
+.opt.on .otext{color:var(--ink)}
+.bub.on.pop{animation:fill .18s ease-out}
+@keyframes fill{from{transform:scale(.72)}to{transform:scale(1)}}
+.qact{display:flex;align-items:center;gap:22px;margin-top:26px}
+.qact .next{margin-left:auto}
+.qquit{margin-top:44px;font-size:14px}
+.qquit .tbtn{font-size:14px;color:var(--form-ink)}
+@media (hover:none){.opt kbd{display:none}}
+
+/* The answer sheet: printed in OMR blue, timing marks down the left edge.
+   A long sheet (a 100-question paper) scrolls inside itself; on touch screens the bubbles are finger-sized. */
+.sheet{position:sticky;top:96px;max-height:calc(100vh - 116px);overflow-y:auto;overscroll-behavior:contain;
+  padding:18px 20px 18px 16px;background:var(--sheet);border:1px solid var(--form-line);color:var(--form-ink)}
+.sheet-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1.5px solid var(--form)}
+.sheet-h b{font-family:var(--serif);font-weight:400;font-size:23px;line-height:1.3}
+.sheet-h span{font-size:13px;font-stretch:90%}
+.sheet-note{margin:8px 0 14px;font-size:13.5px;line-height:1.55;opacity:.9}
+.omr{--b:23px;--gap:5px;--rowh:34px;display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:0 14px}
+.omr-row{position:relative;display:flex;align-items:center;gap:var(--gap);height:var(--rowh);padding-left:20px}
+.omr-col:first-child .omr-row::before{content:"";position:absolute;left:0;top:50%;width:11px;height:4px;margin-top:-2px;background:var(--ink)}
+.omr-col+.omr-col .omr-row{padding-left:6px;border-left:1px solid var(--form-line)}
+.omr-n{width:28px;flex:none;padding:0;border:0;background:none;font-size:13.5px;color:var(--form-ink);text-align:left;cursor:pointer}
+.omr-n:hover{text-decoration:underline}
+.omr-row .bub{--s:var(--b);cursor:pointer}
+/* One column of rows: beside the question on tablets, in the phone drawer, and on every touch screen. */
+@media (max-width:1099px),(pointer:coarse){
+  .omr{grid-template-columns:1fr}
+  .omr-col+.omr-col .omr-row{padding-left:20px;border-left:0}
+  .omr-col+.omr-col .omr-row::before{content:"";position:absolute;left:0;top:50%;width:11px;height:4px;margin-top:-2px;background:var(--ink)}
+}
+@media (pointer:coarse){
+  .omr{--b:36px;--gap:8px;--rowh:50px}
+  .omr-n{width:36px;height:44px;font-size:15px}
+}
+.omr-row .bub:hover:not(.on){background:var(--form-wash)}
+.omr-row.cur{background:var(--form-wash)}
+.omr-row.cur .omr-n{font-weight:600}
+.omr-row.flag .omr-n{position:relative}
+.omr-row.flag .omr-n::after{content:"";position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:var(--form)}
+.sheet-key{display:flex;flex-wrap:wrap;gap:6px 18px;margin:16px 0 0;font-size:13px}
+.sheet-key span{display:inline-flex;align-items:center;gap:7px}
+.sheet-key .bub{--s:14px}
+.sheet-key .fl{width:7px;height:7px;border-radius:50%;background:var(--form)}
+.ebot{display:none}
+.scrim{position:fixed;inset:0;z-index:35;background:rgba(20,18,14,.32)}
+@media (max-width:759px){
+  .sheet{position:fixed;top:auto;left:0;right:0;bottom:0;z-index:40;max-height:80vh;overflow-y:auto;border-width:1px 0 0;
+    padding:18px var(--gut) calc(92px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .26s cubic-bezier(.3,.7,.2,1);visibility:hidden}
+  .sheet.open{transform:none;visibility:visible}
+  .qact .prev,.qact .next{display:none}
+  .ebot{position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+    padding:8px var(--gut) calc(8px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--ink)}
+  .ebot .tbtn{justify-self:start;min-height:44px}
+  .ebot .tbtn:last-child{justify-self:end}
+  .sheetbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--form);border-radius:22px;background:var(--sheet);color:var(--form-ink);font-size:15px;cursor:pointer}
+  .sheetbtn b{font-weight:500;color:var(--ink)}
+  .qno{font-size:50px}
+}
+@media (max-width:420px){.ebar .wrap{gap:12px}.clock{font-size:24px}.ebar-q{font-size:18px}.opt{font-size:17.5px;gap:14px}.opt .bub{--s:32px}}
+
+/* ---------- result ---------- */
+.res-head{display:grid;gap:26px;padding:40px 0 34px;border-bottom:3px double var(--ink)}
+@media (min-width:900px){.res-head{grid-template-columns:auto 1fr;gap:80px;align-items:center}}
+.score-l{margin:0 0 2px;font-size:14px;font-stretch:92%;color:var(--ink-3)}
+.score{position:relative;display:inline-flex;align-items:baseline;gap:10px;padding:22px 46px 24px 40px;margin-left:-8px;white-space:nowrap}
+@media (max-width:420px){.score{padding:20px 30px 22px 26px;margin-left:-4px}}
+.score svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.score path{fill:none;stroke:var(--form);stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke;
+  stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1s .25s cubic-bezier(.55,.1,.3,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.score-n{font-family:var(--serif);font-size:clamp(56px,18vw,128px);line-height:1}
+.score-of{font-family:var(--serif);font-size:clamp(24px,3vw,32px);color:var(--ink-2)}
+.res-title{margin:0;font-family:var(--serif);font-size:clamp(24px,3vw,32px);line-height:1.35}
+.res-sub{margin:4px 0 0;color:var(--ink-2)}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);margin:22px 0 0;border-top:1px solid var(--ink)}
+.tally div{padding:10px 12px 12px 0;border-bottom:1px solid var(--rule)}
+.tally dt{font-size:13px;font-stretch:90%;color:var(--ink-3)}
+.tally dd{margin:0;font-family:var(--serif);font-size:25px;line-height:1.35}
+.tally .r{color:var(--ok)}
+.tally .w{color:var(--bad-ink)}
+@media (min-width:640px){.tally{grid-template-columns:repeat(5,1fr)}}
+.res-acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-top:22px}
+.sample-note{margin:14px 0 0;font-size:14px;color:var(--ink-3)}
+.res-acts .cnt{font-size:14px;font-weight:400;opacity:.85}
+.allright{flex-basis:100%;margin:0;font-family:var(--serif);font-size:19px;color:var(--ok)}
+
+.bysub{width:100%;border-collapse:collapse}
+.bysub th,.bysub td{padding:14px 14px 14px 0;border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
+.bysub thead th{padding-top:0;font-weight:400;font-size:13px;font-stretch:90%;color:var(--ink-3);border-bottom:1px solid var(--ink)}
+.bysub tbody th{font-family:var(--serif);font-weight:400;font-size:19px;line-height:1.35}
+.bysub .num{text-align:right;white-space:nowrap;font-family:var(--serif);font-size:19px}
+.bysub .pc{width:64px}
+.bysub thead .num{font-family:var(--sans);font-size:13px}
+.strip{display:flex;flex-wrap:wrap;gap:5px}
+.strip i{position:relative;width:17px;height:17px;border-radius:50%;border:1.5px solid var(--rule-2)}
+.strip i.r{background:var(--ok);border-color:var(--ok)}
+.strip i.w{border-color:var(--bad)}
+.strip i.w::after,.rv-o li.you.w .bub::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--bad);transform:rotate(45deg);border-radius:1px}
+.strip-key{display:flex;flex-wrap:wrap;gap:6px 20px;margin:14px 0 0;font-size:13.5px;color:var(--ink-3)}
+.strip-key span{display:inline-flex;align-items:center;gap:8px}
+.strip-key i{position:relative;display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid var(--rule-2)}
+.strip-key i.r{background:var(--ok);border-color:var(--ok)}
+.strip-key i.w{border-color:var(--bad);overflow:visible}
+.strip-key i.w::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1.5px;margin-left:-.75px;background:var(--bad);transform:rotate(45deg)}
+@media (max-width:620px){.bysub .pc{display:none}.bysub tbody th{font-size:17px}.strip i{width:15px;height:15px}}
+
+.filters{display:flex;gap:24px;margin:0 0 4px;border-bottom:1px solid var(--ink);overflow-x:auto;scrollbar-width:none}
+.filters button{position:relative;flex:none;min-width:44px;border:0;background:none;padding:12px 0;font-size:15.5px;color:var(--ink-2);cursor:pointer}
+.filters button span{color:var(--ink-3);margin-left:4px}
+.filters button[aria-pressed="true"]{color:var(--ink)}
+.filters button[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--form)}
+.rv{display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 14px;padding:26px 0;border-bottom:1px solid var(--rule)}
+.rv-n{font-family:var(--serif);font-size:22px;line-height:1.4;color:var(--form)}
+.rv-meta{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-size:13.5px;font-stretch:92%;color:var(--ink-3)}
+.rv-st{font-weight:500}
+.rv-st.r{color:var(--ok)}.rv-st.w{color:var(--bad-ink)}
+.rv-q{margin:4px 0 14px;font-family:var(--serif);font-size:20px;line-height:1.6}
+.rv .code{margin:0 0 14px;font-size:14px}
+.rv-o{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.rv-o li{display:flex;align-items:center;gap:12px;font-size:16.5px;color:var(--ink-2)}
+.rv-o .bub{--s:28px;position:relative}
+.rv-o li.right{color:var(--ink)}
+.rv-o li.right .bub{border-color:var(--ok);color:var(--ok);box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--ok)}
+.rv-o li.you .bub{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.rv-o li.you.right .bub{background:var(--ok);border-color:var(--ok)}
+.rv-o li.you.w .bub{overflow:visible}
+.rv-o li.you.w .bub::after{top:-5px;bottom:-5px;width:2.5px;margin-left:-1.25px}
+.rv-o em{font-style:normal;font-size:13px;font-stretch:92%;margin-left:4px}
+.rv-o li.right em{color:var(--ok)}
+.rv-o li.you.w em{color:var(--bad-ink)}
+.rv-x{grid-column:2;margin-top:16px;padding-left:14px;border-left:2px solid var(--rule-2);font-size:15.5px;line-height:1.7;color:var(--ink-2)}
+.rv-x p{margin:0}
+.rv-x a{display:inline-flex;align-items:center;min-height:44px;color:var(--form-ink);font-size:14.5px}
+@media (min-width:1120px){
+  .rv{grid-template-columns:56px minmax(0,680px) minmax(0,1fr);gap:0 48px}
+  .rv-x{grid-column:3;grid-row:1;margin-top:30px;align-self:start}
+}
+.res-foot{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin:40px 0 80px}
+.empty{padding:28px 0;color:var(--ink-3);font-family:var(--serif);font-size:18px}
+
+/* ---------- daily password ---------- */
+/* While <html> has class "locked", only the password screen exists on screen; the app draws nothing behind it. */
+html.locked .demo,html.locked .top,html.locked #view,html.locked .toast{display:none !important}
+html:not(.locked) .gate{display:none}
+.gate{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.gate-bar{background:var(--bar);color:var(--on-bar);border-bottom:1px solid var(--bar-line)}
+.gate-bar .wrap{display:flex;align-items:center;height:58px}
+.gate-main{flex:1;display:grid;place-items:center;padding-top:40px;padding-bottom:72px}
+.gate-card{display:grid;grid-template-columns:12px minmax(0,1fr);gap:0 24px;width:100%;max-width:470px;padding:30px 30px 34px 16px;
+  background:var(--sheet);border:1px solid var(--form-line)}
+.gate-card.shake{animation:shake .34s ease-in-out}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.gate h1{font-family:var(--serif);font-size:clamp(34px,8vw,46px);line-height:1.2;margin:2px 0 10px}
+.gate-lede{margin:0 0 28px;font-size:15.5px;line-height:1.7;color:var(--ink-2)}
+.gate-field{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--ink)}
+.gate-field:focus-within{border-color:var(--form)}
+.gate-field input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);padding:8px 0 10px;
+  font-family:var(--mono);font-size:22px;letter-spacing:.06em;outline:0;-webkit-appearance:none;appearance:none}
+.gate-field .tbtn{font-size:14px;flex:none;padding:0 8px;margin-right:-8px}
+.gate-err{margin:10px 0 0;font-size:14.5px;color:var(--bad-ink)}
+.gate .btn{width:100%;margin-top:26px}
+@media (max-width:420px){.gate-card{gap:0 18px;padding:24px 20px 28px 12px}}
+
+/* ---------- yes/no box ---------- */
+.modal{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:var(--gut);background:rgba(12,14,20,.42)}
+.modal[hidden]{display:none}
+.modal-box{display:grid;grid-template-columns:12px minmax(0,1fr);gap:0 22px;width:100%;max-width:440px;padding:24px 24px 22px 14px;
+  background:var(--sheet);color:var(--ink);border:1px solid var(--form-line);box-shadow:0 24px 60px -24px rgba(0,0,0,.55)}
+.modal-msg{margin:0 0 22px;font-family:var(--serif);font-size:20px;line-height:1.6}
+.modal-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.modal-acts .btn{min-height:46px}
+
+/* ---------- running exam notice (setup) ---------- */
+.running{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin:0 0 8px;padding:14px 16px;
+  background:var(--form-wash);border:1px solid var(--form-line)}
+.running[hidden]{display:none}
+.running p{margin:0;display:flex;flex-direction:column;gap:2px}
+.running b{font-family:var(--serif);font-weight:400;font-size:19px}
+.running span{font-size:14.5px;color:var(--ink-2)}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:90;transform:translateX(-50%);max-width:calc(100% - 32px);
+  padding:11px 18px;border-radius:2px;background:var(--ink);color:var(--paper);font-size:14.5px;box-shadow:0 10px 30px -12px rgba(0,0,0,.5)}
+body[data-screen="exam"] .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+
+/* ---------- phone tab bar ---------- */
+/* On phones the main links move to the bottom, in thumb reach; the top bar keeps the logo and light/dark.
+   Each tab is a bubble and a word; the current one's bubble is filled. Hidden during an exam (it has its own bar). */
+.tabbar{display:none}
+@media (max-width:719px){
+  :root{--tabbar-h:calc(60px + env(safe-area-inset-bottom))}
+  .nav{display:none}
+  .top .theme{margin-left:auto}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(3,1fr);
+    padding:0 var(--gut) env(safe-area-inset-bottom);background:var(--paper);border-top:1px solid var(--ink)}
+  .tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:60px;
+    text-decoration:none;font-size:14.5px;line-height:1.2;color:var(--ink-2)}
+  .tabbar .bub{--s:15px}
+  .tabbar a[aria-current]{color:var(--ink);font-weight:500}
+  .tabbar a[aria-current] .bub{background:var(--primary);border-color:var(--primary)}
+  #view{padding-bottom:var(--tabbar-h)}
+  .summary{bottom:var(--tabbar-h)}
+  .toast{bottom:calc(var(--tabbar-h) + 14px)}
+  body[data-screen="exam"] .tabbar{display:none}
+  body[data-screen="exam"] #view{padding-bottom:0}
+}
+html.locked .tabbar{display:none !important}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+  .score path{stroke-dashoffset:0}
+}
+@media print{.demo,.top,.secbar,.switch,.reveal,.ebot{display:none !important}body{background:#fff}}
