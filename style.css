@@ -676,6 +676,30 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .trace{margin:4px 0 0}
 .trace td:last-child{font-family:var(--sans);font-weight:500}
 .trace th,.trace td{white-space:nowrap}
+.cols{margin:6px 0 0}                          /* column-by-column working for a sum or difference */
+.cols td:nth-child(2){text-align:left;white-space:normal}
+.cols td small{display:block;margin-top:1px;font-family:var(--sans);font-size:12px;line-height:1.3;color:var(--ink-3)}
+/* ৮৪২১ নিয়ম: compact weight tables, and weights over answer-sheet bubbles (filled = 1) */
+.wt{margin:10px 0 0}
+.wt th,.wt td{padding:5px 8px}
+.wt td:last-child{color:inherit;font-weight:inherit}   /* every weight is equal here; no last-column highlight */
+.wrow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin:16px 0 0}
+.wrow>span{display:flex;flex-direction:column;align-items:center;gap:5px}
+.wrow small{font-family:var(--mono);font-size:12.5px;color:var(--ink-3)}
+.wrow .bub{--s:30px;font-family:var(--mono)}
+.wrow .wpt b{font-family:var(--mono);font-size:24px;line-height:30px}
+.wrow+.work-res{margin-top:10px}
+.cp{color:var(--form-ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px}   /* 2's-complement shortcut: the bits copied as they are */
+/* The step-by-step converter in the chapter ২ note */
+.conv .fsec{padding:18px 0}
+.conv-field{max-width:22em}
+.conv-field input{text-transform:uppercase}
+.conv-field input::placeholder{text-transform:none;color:var(--ink-3);font-size:18px;letter-spacing:0}
+.conv-acts{margin:20px 0 0}
+.conv-ex{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin:14px 0 0;font-size:14px;color:var(--ink-3)}
+.conv-ex .tbtn{font-size:14px;min-height:40px;font-family:var(--mono)}
+.conv-out{margin-top:10px;padding-top:6px;border-top:1px solid var(--rule)}
+.conv-out:empty{display:none}
 /* Very narrow phones: let comparison tables and side-by-side working give up a little room */
 @media (max-width:400px){
   .rt.cmp th,.rt.cmp td{padding-right:10px}
@@ -711,6 +735,7 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .bcalc span b{font-weight:600;color:var(--ink)}
 .bcalc .add{padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
 .bcalc .res{font-weight:600}
+.bcalc .cy{color:var(--form-ink)}             /* the carries, written above the columns they go into */
 .carry{font-style:normal;color:var(--bad-ink);text-decoration:line-through;text-decoration-thickness:2px}
 .carry.keep{color:var(--form-ink);text-decoration:none}   /* a carry that is kept and moves on, not dropped */
 @media (max-width:480px){

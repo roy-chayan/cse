@@ -169,6 +169,7 @@ function note(id, section) {
   $$("[data-hl]").forEach(el => (el.innerHTML = highlight(el.textContent)));
   if ($("#noteMcq")) $("#noteMcq").textContent = bn(QS.filter(q => q.c === n.ch).length);
   renderPrev(n.ch);
+  if ($("#conv-form")) setupConverter();
 
   // "এই অংশের MCQ অনুশীলন": a timed exam on just the questions a section lists (data-practice="1,31-40").
   const practiceIds = b => b.dataset.practice.split(",")
@@ -343,6 +344,191 @@ function setupSectionBar(sections = ".blk") {
     });
   }, { rootMargin: "-30% 0px -60% 0px" });
   $$(sections).filter(s => s.id).forEach(s => spy.observe(s));   // only parts the bar links to (not the chapter links at the end)
+}
+
+
+/* ================= STEP-BY-STEP CONVERTER (chapter ২ note, #conv) ================= */
+/* The reader types a number, picks the base it is written in and the base to convert to, and the page writes out the
+   working the same way the worked answers do: the division ladder, the fraction × base table, bit groups, the four-step
+   binary bridge, or the place-value expansion. Values are exact fractions (BigInt), and the answer is checked against
+   the number typed before anything is shown. */
+const CV = {
+  DIG: "0123456789ABCDEF",
+  NAME: { 2: "বাইনারি", 8: "অক্টাল", 10: "দশমিক", 16: "হেক্সাডেসিমাল" },
+  HAS: { 2: "শুধু 0 ও 1", 8: "0 থেকে 7", 10: "0 থেকে 9", 16: "0–9 আর A–F" },
+  PLACES: { 2: 8, 8: 4, 16: 4 },     // how far a never-ending fraction is taken, as in the worked answers
+  UP: `<div class="readup" aria-hidden="true"><svg viewBox="0 0 24 150" preserveAspectRatio="none"><path d="M12 146 V8 M5 15 L12 6 L19 15"/></svg><span>নিচ থেকে পড়ুন</span></div>`,
+  DOWN: `<div class="readup" aria-hidden="true"><svg viewBox="0 0 24 150" preserveAspectRatio="none"><path d="M12 4 V142 M5 135 L12 144 L19 135"/></svg><span>ওপর থেকে পড়ুন</span></div>`
+};
+// Exact fractions {n, d} with BigInt.
+const cvGcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [a, b] = [b, a % b]; return a; };
+const cvQ = (n, d = 1n) => { const g = cvGcd(n, d) || 1n; return { n: n / g, d: d / g }; };
+const cvAdd = (a, b) => cvQ(a.n * b.d + b.n * a.d, a.d * b.d);
+const cvSub = (a, b) => cvQ(a.n * b.d - b.n * a.d, a.d * b.d);
+const cvMul = (a, b) => cvQ(a.n * b.n, a.d * b.d);
+const cvEq = (a, b) => a.n === b.n && a.d === b.d;
+function cvValue(int, frac, base) {
+  const B = BigInt(base); let v = cvQ(0n), p = cvQ(1n);
+  for (const c of int) v = cvAdd(cvMul(v, cvQ(B)), cvQ(BigInt(CV.DIG.indexOf(c))));
+  for (const c of frac) { p = cvMul(p, cvQ(1n, B)); v = cvAdd(v, cvMul(p, cvQ(BigInt(CV.DIG.indexOf(c))))); }
+  return v;
+}
+function cvDec(q, max = 30) {      // exact decimal string, "…" if it goes on past max places
+  let s = (q.n / q.d).toString(), r = q.n % q.d;
+  if (!r) return s;
+  let f = "";
+  for (let i = 0; i < max && r; i++) { r *= 10n; f += (r / q.d).toString(); r %= q.d; }
+  return s + "." + f + (r ? "…" : "");
+}
+const cvN = (s, b) => `(${s})<sub>${b}</sub>`;
+const cvDg = (v, base) => (base === 16 && v >= 10 ? `${v} (${CV.DIG[v]})` : `${v}`);
+const cvJoin = (int, frac) => (int.replace(/^0+(?=.)/, "") || "0") + (frac.replace(/0+$/, "") ? "." + frac.replace(/0+$/, "") : "");
+
+// What was typed: Bengali digits allowed, lower-case letters allowed, spaces ignored.
+function cvParse(raw, base) {
+  const s = raw.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\s+/g, "").toUpperCase();
+  if (!s) return { err: "একটি সংখ্যা লিখুন।" };
+  if (/^[-−]/.test(s)) return { err: "ঋণাত্মক সংখ্যা এখানে নয়; সেগুলো লেখা হয় ২-এর পরিপূরকে (অংশ ৭)।" };
+  const beyond = s.match(/[G-Z]/);
+  if (beyond) return { err: `${beyond[0]} কোনো প্রচলিত সংখ্যা পদ্ধতির অঙ্ক নয়; সবচেয়ে বড় অঙ্ক হেক্সাডেসিমালের F (= ১৫)। তাই সংখ্যাটি বৈধ নয়।` };
+  if (!/^[0-9A-F]*\.?[0-9A-F]*$/.test(s) || s === ".") return { err: "শুধু অঙ্ক 0–9, A–F আর সর্বোচ্চ একটি বিন্দু লেখা যায়।" };
+  const bad = [...s].find(c => c !== "." && CV.DIG.indexOf(c) >= base);
+  if (bad) return { err: `${CV.NAME[base]} পদ্ধতিতে ${bad} অঙ্কটি নেই; এতে আছে ${CV.HAS[base]}। সংখ্যাটি কোন পদ্ধতির, সেটি ঠিক করে বাছুন।` };
+  const [i, f = ""] = s.split(".");
+  const int = i.replace(/^0+(?=.)/, "") || "0", frac = f.replace(/0+$/, "");
+  if (int.length > 12 || frac.length > 6) return { err: "পূর্ণ অংশে ১২টি আর ভগ্নাংশে ৬টি অঙ্ক পর্যন্ত লিখুন।" };
+  return { int, frac, text: cvJoin(int, frac) };
+}
+
+// Whole number: divide by the base again and again; read the remainders upwards.
+function cvLadder(n, base) {
+  const B = BigInt(base), rows = [];
+  for (let x = n; x > 0n; x /= B) rows.push([x, Number(x % B)]);
+  const digits = rows.map(r => CV.DIG[r[1]]).reverse().join("");
+  return { digits, html: `<div class="work"><div class="ladder" role="img" aria-label="${bn(n)}-কে ${bn(base)} দিয়ে বারবার ভাগ; ভাগশেষগুলো নিচ থেকে পড়লে ${digits}।">` +
+    rows.map(([q, r]) => `<span class="dv">${base}</span><span class="qt">${q}</span><span class="rm">${cvDg(r, base)}</span>`).join("") +
+    `<span class="dv"></span><span class="qt end">0</span><span class="rm"></span></div>${CV.UP}<p class="work-res">${cvN(n, 10)} = (<b>${digits}</b>)<sub>${base}</sub></p></div>` };
+}
+// Decimal fraction: multiply by the base again and again; read the whole parts downwards.
+function cvFrac(fd, base) {
+  const places = CV.PLACES[base], k = fd.length, T = 10n ** BigInt(k), B = BigInt(base);
+  const show = q => { const s = (q.n * T) / q.d; return `${s / T}.${(s % T).toString().padStart(k, "0")}`; };
+  let f = cvQ(BigInt(fd), T), digits = "", cycle = null;
+  const rows = [], seen = new Map();
+  for (let i = 0; i < places && f.n !== 0n; i++) {
+    const key = `${f.n}/${f.d}`;
+    if (seen.has(key) && !cycle) cycle = [seen.get(key), i];
+    if (!seen.has(key)) seen.set(key, i);
+    const v = cvMul(f, cvQ(B)), ip = Number(v.n / v.d);
+    rows.push(`<tr><td>${show(f)} × ${base} = ${show(v)}</td><td>${cvDg(ip, base)}</td></tr>`);
+    digits += CV.DIG[ip]; f = cvSub(v, cvQ(BigInt(ip)));
+  }
+  const exact = f.n === 0n;
+  if (!exact && !cycle && seen.has(`${f.n}/${f.d}`)) cycle = [seen.get(`${f.n}/${f.d}`), rows.length];
+  const note = exact ? `${bn(rows.length)}টি ধাপে ভগ্নাংশ ০ হয়েছে, তাই উত্তর হুবহু।`
+    : cycle ? `${bn(cycle[0] + 1)} নম্বর ধাপের ভগ্নাংশ ${bn(cycle[1] + 1)} নম্বর ধাপে আবার এসেছে, তাই ${digits.slice(cycle[0], cycle[1])} অংশটি বারবার ফিরে আসবে; ভগ্নাংশটি শেষ হয় না। ${bn(places)} ঘর পর্যন্ত নেওয়া হলো।`
+    : `ভগ্নাংশটি ${bn(places)} ঘরে শেষ হয়নি, তাই ${bn(places)} ঘর পর্যন্ত নেওয়া হলো।`;
+  return { digits, exact, note, html: `<div class="work"><table class="truth trace"><thead><tr><th>ভগ্নাংশ × ${bn(base)}</th><th>পূর্ণ অংশ</th></tr></thead><tbody>${rows.join("")}</tbody></table>${CV.DOWN}<p class="work-res">(0.${fd})<sub>10</sub> ${exact ? "=" : "≈"} (<b>0.${digits}</b>)<sub>${base}</sub></p></div>` };
+}
+// Binary digits -> groups of n from the point, zeros added at the outer ends.
+function cvGroups(int, frac, n) {
+  int = int.replace(/^0+(?=.)/, ""); int = "0".repeat((n - (int.length % n)) % n) + int;
+  frac += "0".repeat(frac ? (n - (frac.length % n)) % n : 0);
+  const g = s => s.match(new RegExp(`.{${n}}`, "g")) || [];
+  return { int: g(int), frac: g(frac) };
+}
+// Bit groups drawn as in section ৫ (each group over the digit it makes), or digits over their bits.
+const cvGroupFig = (gr, label, res) => `<div class="groups" role="img" aria-label="${label}">` +
+  gr.int.map(([bits, d]) => `<span><code>${bits}</code><b>${d}</b></span>`).join("") +
+  (gr.frac.length ? `<span class="gpt"><code>.</code></span>` + gr.frac.map(([bits, d]) => `<span><code>${bits}</code><b>${d}</b></span>`).join("") : "") +
+  `<p class="work-res">${res}</p></div>`;
+// The 8421 picture: each weight over a bubble, filled for 1.
+function cvWeights(int, frac) {
+  const w = (k) => (k >= 0 ? String(2 ** k) : String(2 ** k).replace(/^0/, ""));
+  const cell = (b, k) => `<span><small>${w(k)}</small><i class="bub${b === "1" ? " on" : ""}">${b}</i></span>`;
+  const used = [...int].map((b, i) => [b, int.length - 1 - i]).concat([...frac].map((b, i) => [b, -(i + 1)])).filter(([b]) => b === "1").map(([, k]) => w(k));
+  return `<div class="wrow" role="img" aria-label="প্রতিটি ঘরের ওজনের নিচে বিট; যেখানে 1, সেই ওজনগুলো যোগ">` + [...int].map((b, i) => cell(b, int.length - 1 - i)).join("") +
+    (frac ? `<span class="wpt"><small>&nbsp;</small><b>.</b></span>` + [...frac].map((b, i) => cell(b, -(i + 1))).join("") : "") + `</div>` +
+    `<p class="work-res">${used.length ? used.join(" + ") : "0"}</p>`;
+}
+
+function cvSolve(p, from, to) {
+  const v = cvValue(p.int, p.frac, from), parts = [];
+  const pr = s => parts.push(`<p class="prose">${s}</p>`), ex = (l, s) => parts.push(`<p class="expand"><span>${l}</span> ${s}</p>`);
+  let out, approx = false;
+  if (to === 10) {
+    if (from === 2) { pr("৮৪২১ নিয়মে: যে ঘরে 1, শুধু সেই ঘরের ওজন যোগ করুন।"); parts.push(cvWeights(p.int, p.frac)); }
+    out = cvDec(v);
+    const terms = [...p.int].map((c, i) => [c, p.int.length - 1 - i]).concat([...p.frac].map((c, i) => [c, -(i + 1)]));
+    const t1 = terms.map(([c, k]) => `${CV.DIG.indexOf(c)}×${from}<sup>${k}</sup>`).join(" + ");
+    const t2 = terms.filter(([c]) => c !== "0").map(([c, k]) => cvDec(cvMul(cvQ(BigInt(CV.DIG.indexOf(c))), k >= 0 ? cvQ(BigInt(from) ** BigInt(k)) : cvQ(1n, BigInt(from) ** BigInt(-k))))).join(" + ") || "0";
+    pr(`${from === 2 ? "ঘাতের রূপে লিখলে" : "প্রতিটি অঙ্ককে তার স্থানীয় মান, অর্থাৎ ভিত্তির ঘাত দিয়ে গুণ করে যোগ"}:`);
+    ex(cvN(p.text, from), `= ${t1} = ${t2} = (<b>${out}</b>)<sub>10</sub>`);
+    if (p.int.length > 1) {
+      let r = 0n; const steps = [...p.int].map((c, i) => { const d = BigInt(CV.DIG.indexOf(c)); const s = i ? `${r} × ${from} + ${d} = ${r * BigInt(from) + d}` : `${d}`; r = r * BigInt(from) + d; return s; });
+      ex("গুণ করে যোগ (পূর্ণ অংশ)", steps.join(" → "));
+    }
+  } else if (from === 10) {
+    pr(`পূর্ণ অংশ ${bn(to)} দিয়ে বারবার ভাগ${p.frac ? `, ভগ্নাংশ ${bn(to)} দিয়ে বারবার গুণ` : ""}।`);
+    let oi = "0";
+    if (p.int !== "0") { const l = cvLadder(BigInt(p.int), to); parts.push(l.html); oi = l.digits; } else pr("পূর্ণ অংশ ০, তাই ভাগের দরকার নেই।");
+    let of = "";
+    if (p.frac) { const f = cvFrac(p.frac, to); parts.push(f.html); pr(f.note); of = f.digits; approx = !f.exact; }
+    out = cvJoin(oi, of);
+    if (to !== 2 && p.frac) pr("অক্টাল বা হেক্সায় চাইলে আগে বাইনারিতে নিয়ে দল করেও পারেন; তবে ভগ্নাংশ শেষ না হলে সরাসরি গুণ করাই নিরাপদ।");
+  } else if (from === 2) {
+    const n = to === 8 ? 3 : 4, gr = cvGroups(p.int, p.frac, n), rd = g => g.map(b => [b, CV.DIG[parseInt(b, 2)]]);
+    out = cvJoin(gr.int.map(b => CV.DIG[parseInt(b, 2)]).join(""), gr.frac.map(b => CV.DIG[parseInt(b, 2)]).join(""));
+    pr(`বিন্দু থেকে দুই দিকে ${bn(n)} বিটের দল করুন (কম পড়লে বাইরের দিকে 0), তারপর প্রতিটি দল ${n === 3 ? "৪২১" : "৮৪২১"} ওজনে পড়ুন:`);
+    parts.push(cvGroupFig({ int: rd(gr.int), frac: rd(gr.frac) }, `${n} বিটের দল`, `${cvN(p.text, 2)} = (<b>${out}</b>)<sub>${to}</sub>`));
+  } else if (to === 2) {
+    const n = from === 16 ? 4 : 3, bits = c => CV.DIG.indexOf(c).toString(2).padStart(n, "0");
+    out = cvJoin([...p.int].map(bits).join(""), [...p.frac].map(bits).join(""));
+    pr(`প্রতিটি ${CV.NAME[from]} অঙ্কের জায়গায় তার ${bn(n)} বিট লিখুন (${n === 4 ? "৮৪২১" : "৪২১"} ওজনে); তারপর একেবারে বাঁয়ের আর ডানের বাড়তি 0 বাদ।`);
+    parts.push(cvGroupFig({ int: [...p.int].map(c => [bits(c), c]), frac: [...p.frac].map(c => [bits(c), c]) }, "প্রতিটি অঙ্কের ওপরে তার বিট", `${cvN(p.text, from)} = (<b>${out}</b>)<sub>2</sub>`));
+  } else {
+    const n1 = from === 16 ? 4 : 3, n2 = to === 16 ? 4 : 3;
+    const vals = s => [...s].map(c => CV.DIG.indexOf(c)).join(" ");
+    const bits = s => [...s].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(" ");
+    const gr = cvGroups([...p.int].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(""), [...p.frac].map(c => CV.DIG.indexOf(c).toString(2).padStart(n1, "0")).join(""), n2);
+    const show = g => g.int.join(" ") + (g.frac.length ? " . " + g.frac.join(" ") : "");
+    out = cvJoin(gr.int.map(b => CV.DIG[parseInt(b, 2)]).join(""), gr.frac.map(b => CV.DIG[parseInt(b, 2)]).join(""));
+    pr(`${CV.NAME[from]} থেকে ${CV.NAME[to]}ে সরাসরি যাওয়া যায় না; বাইনারি সেতু হয়ে চার ধাপে:`);
+    parts.push(`<table class="rt cmp eqtab"><thead><tr><th>ধাপ</th><th>কী করবেন</th><th>এই সংখ্যায়</th></tr></thead><tbody>
+      <tr><td>১</td><td>প্রতিটি অঙ্কের মান লিখুন</td><td class="m">${vals(p.int)}${p.frac ? " . " + vals(p.frac) : ""}</td></tr>
+      <tr><td>২</td><td>প্রতিটি মান ${bn(n1)} বিটে (${n1 === 4 ? "৮৪২১" : "৪২১"})</td><td class="m">${bits(p.int)}${p.frac ? " . " + bits(p.frac) : ""}</td></tr>
+      <tr><td>৩</td><td>বিন্দু থেকে দুই দিকে ${bn(n2)} বিটের দল; কম পড়লে বাইরের দিকে 0</td><td class="m">${show(gr)}</td></tr>
+      <tr><td>৪</td><td>প্রতিটি দল ${n2 === 4 ? "৮৪২১" : "৪২১"} ওজনে পড়ুন</td><td class="m">${[...out].join(" ")}</td></tr></tbody></table>`);
+  }
+  // Check the answer exactly (or within the last kept place, if the fraction was cut short) before showing it.
+  const [oi, of = ""] = out.split("."), ov = cvValue(oi, of, to), diff = cvSub(v, ov);
+  const fine = approx ? diff.n >= 0n && diff.n * BigInt(to) ** BigInt(CV.PLACES[to]) < diff.d : cvEq(v, ov);
+  if (!fine) return `<p class="gate-err">দুঃখিত, এই সংখ্যার হিসাবে একটি গোলমাল হয়েছে। অন্য একটি সংখ্যা দিয়ে চেষ্টা করুন।</p>`;
+  parts.push(`<p class="final"><b>উত্তর</b>${cvN(p.text, from)} ${approx ? "≈" : "="} ${cvN(out, to)}</p>`);
+  parts.push(`<p class="prose">যাচাই: ${approx ? `${cvN(out, to)} = ${bn(cvDec(ov, 10))} ≈ ${bn(cvDec(v, 10))}` : `দুটিরই দশমিক মান ${bn(cvDec(v, 12))}`}।</p>`);
+  return parts.join("\n");
+}
+
+function setupConverter() {
+  const form = $("#conv-form"), num = $("#conv-num"), out = $("#conv-out"), err = $("#conv-err");
+  const fail = m => { err.textContent = m; err.hidden = false; out.innerHTML = ""; };
+  const run = () => {
+    const from = Number(form.cvfrom.value), to = Number(form.cvto.value);
+    err.hidden = true;
+    if (from === to) return fail("দুটি পদ্ধতি একই; যে পদ্ধতিতে নেবেন, সেটি আলাদা বাছুন।");
+    const p = cvParse(num.value, from);
+    if (p.err) return fail(p.err);
+    if (p.int === "0" && !p.frac) { out.innerHTML = `<p class="final"><b>উত্তর</b>${cvN("0", from)} = ${cvN("0", to)}</p>`; return; }
+    out.innerHTML = cvSolve(p, from, to);
+  };
+  form.onsubmit = e => { e.preventDefault(); run(); };
+  // Changing a base redraws the working, once something has been shown.
+  form.addEventListener("change", e => { if (/^cv(from|to)$/.test(e.target.name) && (out.innerHTML || !err.hidden)) run(); });
+  $$("[data-ex]", form).forEach(b => (b.onclick = () => {
+    const [n, f, t] = b.dataset.ex.split(",");
+    num.value = n; form.cvfrom.value = f; form.cvto.value = t; run();
+    out.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }));
 }
 
 
