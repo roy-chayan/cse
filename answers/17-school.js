@@ -560,7 +560,7 @@
   <section class="part">
     <h3 class="part-h"><span>আয়তক্ষেত্রের ক্ষেত্রফল নির্ণয়ের ফ্লোচার্ট</span><i class="bub mk">৫</i></h3>
     <p class="prose">আয়তক্ষেত্রের ক্ষেত্রফল = দৈর্ঘ্য × প্রস্থ। দৈর্ঘ্য L ও প্রস্থ W ইনপুট নিয়ে A = L × W হিসাব করে A দেখাতে হবে।</p>
-    <figure class="fig flow rectflow">
+    <figure class="fig flow slim">
       <svg viewBox="0 0 320 352" role="img" aria-label="ফ্লোচার্ট: শুরু; L ও W ইনপুট; A = L × W; A প্রিন্ট; শেষ।">
         <defs><marker id="rect17-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
         <rect class="fs" x="100" y="10" width="120" height="40" rx="20"/><text x="160" y="31">শুরু</text>
