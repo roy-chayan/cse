@@ -106,46 +106,63 @@ function highlight(code) {
 
 
 /* ================= HOME ================= */
-/* Motivational lines (quotes.js) above সূচিপত্র, one at a time. All of them sit in the same spot, so the page below
-   never jumps; the one on screen fades out upwards and the next fades in from below, every 7 seconds. Tapping or
-   clicking the quote shows the next one at once (and the 7 seconds start again). Pointing at it, focusing it or leaving
-   the tab pauses the turning; with reduced motion it only changes when tapped. There is no counter or row of dots,
-   so the list in quotes.js can grow as long as you like. */
-let quoteTimer = 0;
+/* Motivational lines (quotes.js) above সূচিপত্র, one at a time, written on a strip of answer script (খাতা): the
+   quote mark sits in the margin behind the double margin line, the words sit on ruled lines, and a small label above
+   names the quote's theme. All quotes share one spot, so the page below never jumps; the one on screen fades out and
+   the next fades in. The strip's bottom edge fills with blue over 7 seconds and the next quote comes when it is full
+   (the animation's end is the clock). Tapping the quote, the → bubble or swiping left shows the next one; the ← bubble
+   or swiping right goes back; ← and → keys work on the focused quote. A mouse resting on the strip, keyboard focus on it
+   or a hidden tab pauses the line; with reduced motion there is no line and it only changes when asked. There is no
+   counter, so quotes.js can grow as long as you like. An entry is { k: theme, q: words } or just the words. */
+document.addEventListener("visibilitychange", () => { const b = $("#quotes"); if (b) b.classList.toggle("away", document.hidden); });
 function renderQuotes() {
-  clearInterval(quoteTimer);
-  const box = $("#quotes"), list = (window.ICT_QUOTES || []).filter(Boolean);
+  const box = $("#quotes"), list = (window.ICT_QUOTES || []).map(x => typeof x === "string" ? { q: x } : x).filter(x => x && x.q);
   if (!box || !list.length) return;
-  let cur = Math.floor(Math.random() * list.length), held = false;
-  const items = list.map((q, i) => `<span class="q-item${i === cur ? " on" : ""}"${i === cur ? "" : ' aria-hidden="true"'}>${esc(q)}</span>`).join("");
-  box.innerHTML = `<span class="q-mark" aria-hidden="true">“</span>` + (list.length > 1
-    ? `<button type="button" class="q-stage" title="চাপলে পরের প্রেরণা">${items}</button>`
-    : `<p class="q-stage">${items}</p>`);
+  const many = list.length > 1, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let cur = Math.floor(Math.random() * list.length), held = 0;
+  const items = list.map((x, i) => `<span class="q-item${i === cur ? " on" : ""}"${i === cur ? "" : ' aria-hidden="true"'}>${esc(x.q)}</span>`).join("");
+  const arrow = (label, d) => `<button type="button" class="bub q-btn" aria-label="${label}" title="${label}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg></button>`;
+  box.innerHTML = `<span class="q-mark" aria-hidden="true">“</span>
+    <div class="q-main">
+      <div class="q-head"><span class="q-label">পড়ার প্রেরণা</span><span class="q-tag" hidden></span>${many ? `<span class="q-nav">${arrow("আগের উক্তি", "M10 3 5 8l5 5")}${arrow("পরের উক্তি", "m6 3 5 5-5 5")}</span>` : ""}</div>
+      ${many ? `<button type="button" class="q-stage" title="চাপলে পরের উক্তি">${items}</button>` : `<p class="q-stage">${items}</p>`}
+    </div>${many && !still ? `<span class="q-bar" aria-hidden="true"><i></i></span>` : ""}`;
   box.hidden = false;
-  const els = $$(".q-item", box), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const show = i => {
+  box.classList.toggle("away", document.hidden);
+  const els = $$(".q-item", box), tag = $(".q-tag", box), bar = $(".q-bar i", box), stage = $(".q-stage", box);
+  const setTag = () => { const k = list[cur].k || ""; tag.textContent = k; tag.hidden = !k; tag.classList.remove("swap"); void tag.offsetWidth; tag.classList.add("swap"); };
+  const run = () => { if (!bar) return; bar.classList.remove("run"); void bar.offsetWidth; bar.classList.add("run"); };
+  const show = (i, back) => {
     const old = els[cur];
+    box.classList.toggle("back", !!back);
     old.classList.remove("on"); old.classList.add("out"); old.setAttribute("aria-hidden", "true");
     setTimeout(() => old.classList.remove("out"), 700);
-    cur = i;
+    cur = (i + list.length) % list.length;
     els[cur].classList.remove("out"); els[cur].classList.add("on"); els[cur].removeAttribute("aria-hidden");
+    setTag(); run();
   };
-  const start = () => {
-    clearInterval(quoteTimer);
-    if (still) return;
-    quoteTimer = setInterval(() => {
-      if (!box.isConnected) return clearInterval(quoteTimer);   // the reader has left the home page
-      if (!held && !document.hidden) show((cur + 1) % list.length);
-    }, 7000);
-  };
-  if (list.length < 2) return;
-  $(".q-stage", box).onclick = () => { show((cur + 1) % list.length); start(); };
-  // Pause only for a mouse resting on it or keyboard focus on it; a tap or a click doesn't freeze it.
-  box.onpointerenter = e => { if (e.pointerType === "mouse") held = true; };
-  box.onpointerleave = e => { if (e.pointerType === "mouse") held = false; };
-  box.addEventListener("focusin", e => { if (e.target.matches(":focus-visible")) held = true; });
-  box.addEventListener("focusout", () => (held = false));
-  start();
+  setTag();
+  if (!many) return;
+  if (bar) bar.addEventListener("animationend", () => { if (box.isConnected) show(cur + 1); });
+  const [prev, next] = $$(".q-btn", box);
+  prev.onclick = () => show(cur - 1, true);
+  next.onclick = () => show(cur + 1);
+  // A swipe on a phone turns the quote; the click that follows a swipe is ignored.
+  let sx = 0, sy = 0, swiped = false;
+  stage.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiped = false; }, { passive: true });
+  stage.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; show(cur + (dx < 0 ? 1 : -1), dx > 0); }
+  }, { passive: true });
+  stage.onclick = () => { if (swiped) { swiped = false; return; } show(cur + 1); };
+  stage.onkeydown = e => { if (e.key === "ArrowRight") { e.preventDefault(); show(cur + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); show(cur - 1, true); } };
+  // Pause only for a mouse resting on it or keyboard focus on it; a tap doesn't freeze it.
+  const hold = (bit, on) => { held = on ? held | bit : held & ~bit; box.classList.toggle("held", !!held); };
+  box.onpointerenter = e => { if (e.pointerType === "mouse") hold(1, true); };
+  box.onpointerleave = e => { if (e.pointerType === "mouse") hold(1, false); };
+  box.addEventListener("focusin", e => { if (e.target.matches(":focus-visible")) hold(2, true); });
+  box.addEventListener("focusout", () => hold(2, false));
+  run();
 }
 
 function home() {
@@ -171,22 +188,57 @@ function home() {
   const half = Math.ceil(list.length / 2);
   $("#toc").innerHTML = list.length ? `<ol>${list.slice(0, half).map(row).join("")}</ol><ol start="${half + 1}">${list.slice(half).map(row).join("")}</ol>` : "";
 
-  // Written papers (school level only), newest first: one row per exam, with how many answers are written so far.
+  // Written papers (school level only), newest first, as a register in two columns like the contents above: papers
+  // with model answers on the left, the rest on the right. Each row is one link with a bubble per question, filled
+  // when its full model answer is written, half-filled when a chapter note answers it (written-prev.js), else empty.
   const W = D.written || {}, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a));
-  $("#wledger").innerHTML = `<thead><tr><th>পরীক্ষা</th><th>প্রশ্নপত্র</th><th>নমুনা উত্তর</th></tr></thead><tbody>` +
-    keys.map(k => {
-      const w = W[k], ready = w.questions.filter(q => writtenAnswer(k, q.n)).length, n = w.questions.length;
-      return `<tr><th>${ord(parseInt(k))}<small>${bn(w.year)}</small></th>` +
-        `<td><a href="#/written/${k}">${esc(w.subject)}</a><span class="wl-n">${bn(n)}টি প্রশ্ন · কোড ${w.code}</span></td>` +
-        `<td class="wl-st">${ready ? `<span class="wl-ok">${ready === n ? "তৈরি" : `${bn(ready)}/${bn(n)}`}</span>` : `<span class="na">আসছে</span>`}</td></tr>`;
-    }).join("") + "</tbody>";
-  // A click anywhere in a row opens that paper. The title stays the row's one real link, for keyboards and screen readers;
-  // a click that ends a text selection doesn't navigate.
-  $("#wledger").onclick = e => {
-    const a = e.target.closest("tbody tr")?.querySelector("a");
-    if (!a || e.target.closest("a") || String(getSelection())) return;
-    location.hash = a.getAttribute("href");
-  };
+  const papers = keys.map(k => {
+    const w = W[k], st = w.questions.map(q => writtenAnswer(k, q.n) ? 2 : noteAnswers(k, q.n).length ? 1 : 0);
+    return { k, w, st, n: st.length, full: st.filter(s => s === 2).length, note: st.filter(s => s === 1).length };
+  });
+  const done = papers.filter(p => p.full), rest = papers.filter(p => !p.full), sum = (g, f) => g.reduce((t, p) => t + p[f], 0);
+  const span = g => g.length > 1 ? `${ord(parseInt(g[g.length - 1].k))}–${ord(parseInt(g[0].k))}` : g.length ? ord(parseInt(g[0].k)) : "";
+  const state = p => p.full ? (p.full === p.n ? "সব উত্তর" : `${bn(p.full)}/${bn(p.n)} উত্তর`) : p.note ? `${bn(p.note)}/${bn(p.n)} নোটে` : "শুধু প্রশ্ন";
+  const paperRow = p => `<li><a class="wr" href="#/written/${p.k}">
+      <span class="wr-no">${ord(parseInt(p.k))}<small>${bn(p.w.year)}</small></span>
+      <span class="wr-body"><span class="wr-dots" aria-hidden="true">${p.st.map(s => `<i class="dot${s === 2 ? " full" : s === 1 ? " half" : ""}"></i>`).join("")}</span>
+        <span class="wr-sub">${esc(p.w.subject)} · ${bn(p.n)}টি প্রশ্ন</span></span>
+      <span class="wr-st${p.full ? " ok" : ""}">${state(p)}</span></a></li>`;
+  const col = (g, title, sub) => g.length ? `<section class="wr-col"><h3 class="wr-h">${title}<small>${span(g)} · ${sub}</small></h3><ol>${g.map(paperRow).join("")}</ol></section>` : "";
+  const qn = sum(papers, "n"), fulls = sum(papers, "full"), notes = sum(rest, "note");
+  $("#wLedeHome").textContent = `স্কুল পর্যায়ের সহকারী শিক্ষক (কম্পিউটার / আইসিটি) পদের ${bn(papers.length)}টি লিখিত প্রশ্নপত্র, মূল প্রশ্নপত্রের ক্রমে। ` +
+    `${bn(qn)}টি প্রশ্নের ${bn(fulls)}টির পূর্ণ নমুনা উত্তর আছে${notes ? `, আরও ${bn(notes)}টির উত্তর অধ্যায়ের নোটে` : ""}।`;
+  $("#wreg").innerHTML = `<div class="wr-cols">` +
+    col(done, "নমুনা উত্তরসহ", "প্রতিটি প্রশ্নের পূর্ণ উত্তর, নম্বর বণ্টন মেনে") +
+    col(rest, "প্রশ্ন, উত্তর অধ্যায়ের নোটে", "প্রতিটি প্রশ্নের নিচে নোটের লিংক") + `</div>
+    <p class="toc-key"><span><i class="dot full"></i>পূর্ণ নমুনা উত্তর</span><span><i class="dot half"></i>অধ্যায়ের নোটে উত্তর</span><span><i class="dot"></i>এখনো নেই</span><span>প্রতিটি বৃত্ত একটি প্রশ্ন</span></p>`;
+}
+
+/* A note's two ways on to practice, "read the chapter's MCQs" and "take a timed exam on it": under the title so they
+   are there from the start, and again at the end of the note (replacing the template's plain pair, so both match). */
+function noteActions(chId) {
+  const ch = chapterOf(chId);
+  if (!ch) return;
+  const total = QS.filter(q => q.c === chId).length;
+  const icon = d => `<svg class="na-i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const sheet = icon('<path d="M6 3h9l3 3v15H6z"/><path d="M9 9h6M9 13h6M9 17h4"/>');
+  const watch = icon('<circle cx="12" cy="14" r="7"/><path d="M12 10v4l2.5 2M10 3h4M12 3v4"/>');
+  const html = `<a class="btn na" href="#/mcq/${chId}">${sheet}<span class="na-t"><b>অধ্যায়ের MCQ পড়ুন</b><small>${bn(total)}টি প্রশ্ন, উত্তর ও ব্যাখ্যাসহ</small></span><span class="na-go" aria-hidden="true">→</span></a>` +
+    `<a class="btn line na" href="#/setup/${chId}">${watch}<span class="na-t"><b>এই অধ্যায়ে পরীক্ষা দিন</b><small>সময় ধরে, উত্তরপত্র ভরাট করে</small></span><span class="na-go" aria-hidden="true">→</span></a>`;
+  const meta = $(".note .doc-head .doc-meta");
+  if (meta) meta.insertAdjacentHTML("afterend", `<p class="note-acts na-top" aria-label="এই অধ্যায়ের অনুশীলন">${html}</p>`);
+  $$(".note .note-acts:not(.na-top)").forEach(p => (p.innerHTML = html));
+}
+
+/* Where a written question is answered in a chapter note: the note links that written-prev.js gives the question's
+   parts, one per place, with the chapter's name and which part (অথবা, ক, খ) it answers. */
+function noteAnswers(key, n) {
+  const P = window.ICT_PREV, e = parseInt(key), seen = new Set();
+  if (!P) return [];
+  return P.items.filter(x => x.e === e && x.n === n && x.ans && x.ans.startsWith("#/note/") && !seen.has(x.ans) && seen.add(x.ans)).map(x => {
+    const ch = allChapters().find(c => c.id === x.c);
+    return { href: x.ans, label: ch ? `অধ্যায় ${bn(ch.no)} · ${ch.name}` : "অধ্যায়ের নোট", part: [x.o ? "অথবা" : "", x.l || ""].filter(Boolean).join(" ") };
+  });
 }
 
 
@@ -196,7 +248,10 @@ const NOTES = {
   "computer-basics": { tpl: "t-note-ch01", ch: "ch01" },
   "number-system": { tpl: "t-note", ch: "ch02" },
   "data-representation": { tpl: "t-note-ch03", ch: "ch03" },
-  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" }
+  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" },
+  "operating-system": { tpl: "t-note-ch05", ch: "ch05" },
+  "algorithm-flowchart": { tpl: "t-note-ch06", ch: "ch06" },
+  "internet": { tpl: "t-note-ch07", ch: "ch07" }
 };
 
 function note(id, section) {
@@ -211,6 +266,7 @@ function note(id, section) {
     `<div><b>${bn(k)}</b><code>${k.toString(2).padStart(4, "0")}</code><code>${k.toString(8)}</code><code class="hx">${k.toString(16).toUpperCase()}</code></div>`).join("");
   $$("[data-hl]").forEach(el => (el.innerHTML = highlight(el.textContent)));
   if ($("#noteMcq")) $("#noteMcq").textContent = bn(QS.filter(q => q.c === n.ch).length);
+  noteActions(n.ch);
   renderPrev(n.ch);
   if ($("#conv-form")) setupConverter();
 
@@ -635,6 +691,9 @@ function written(id, section) {
   mount("t-written");
   document.title = `লিখিত উত্তর · ${W.exam} · ${W.level} · ICT মাস্টার`;
   const has = n => !!writtenAnswer(key, n), ready = qs.filter(q => has(q.n)).length;
+  // A question without a model answer may still be answered in a chapter note; those get a half-filled bubble and links.
+  const notes = Object.fromEntries(qs.map(q => [q.n, has(q.n) ? [] : noteAnswers(key, q.n)]));
+  const inNote = n => notes[n].length > 0, noted = qs.filter(q => inNote(q.n)).length;
   // Time per question follows its marks (a ১৫-mark question gets three times a ৫-mark one).
   const fullMarks = qs.reduce((t, q) => t + numOf(marksTotal(q.marks)), 0) || total;
   const paceOf = q => Math.round(W.mins * (numOf(marksTotal(q.marks)) || 1) / fullMarks), pace = Math.round(W.mins / total);
@@ -642,8 +701,9 @@ function written(id, section) {
   $("#wCrumb").textContent = `${W.exam} · ${W.level}`;
   $("#wTitle").textContent = W.subject;
   $("#wLede").textContent = ready ? `${W.post} পদের লিখিত পরীক্ষার প্রশ্ন, আর নম্বর বণ্টন মেনে সাজানো নমুনা উত্তর।`
+    : noted ? `${W.post} পদের লিখিত পরীক্ষার প্রশ্ন, মূল প্রশ্নপত্রের ক্রমে। পূর্ণ নমুনা উত্তর পরে যোগ হবে; এর মধ্যে ${bn(noted)}টি প্রশ্নের উত্তর অধ্যায়ের নোটে আছে, প্রতিটি প্রশ্নের নিচে লিংক।`
     : `${W.post} পদের লিখিত পরীক্ষার প্রশ্ন, মূল প্রশ্নপত্রের ক্রমে। নমুনা উত্তর পরে যোগ হবে।`;
-  $("#wMeta").innerHTML = [["বিষয় কোড", W.code], ["সময়", W.time], ["পূর্ণমান", W.full], ["পরীক্ষা", W.date], ready ? ["উত্তর তৈরি", `${bn(ready)}/${bn(total)}`] : ["প্রশ্ন", bn(total)]]
+  $("#wMeta").innerHTML = [["বিষয় কোড", W.code], ["সময়", W.time], ["পূর্ণমান", W.full], ["পরীক্ষা", W.date], ready ? ["উত্তর তৈরি", `${bn(ready)}/${bn(total)}`] : ["প্রশ্ন", bn(total)], !ready && noted ? ["নোটে উত্তর", `${bn(noted)}/${bn(total)}`] : null].filter(Boolean)
     .map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
   // Tips under the title. A paper with no answers yet has no answer-marks to point at, and nothing to hide.
   const mins = m => bn(Math.round(W.mins * m / fullMarks));
@@ -656,17 +716,18 @@ function written(id, section) {
   if (!ready) $(".wbar .switch").style.display = "none";
 
   // Sticky bar: one bubble per question, filled when its answer is written.
-  $("#secnav").innerHTML = qs.map(q => `<a href="#/written/${key}/q${q.n}" aria-label="প্রশ্ন ${bn(q.n)}${has(q.n) ? "" : ", উত্তর আসছে"}"><i class="bub${has(q.n) ? " on" : ""}">${bn(q.n)}</i></a>`).join("");
+  $("#secnav").innerHTML = qs.map(q => `<a href="#/written/${key}/q${q.n}" aria-label="প্রশ্ন ${bn(q.n)}${has(q.n) ? "" : inNote(q.n) ? ", উত্তর অধ্যায়ের নোটে" : ", উত্তর আসছে"}"><i class="bub${has(q.n) ? " on" : inNote(q.n) ? " nt" : ""}">${bn(q.n)}</i></a>`).join("");
 
   // The question paper as printed, each line leading to its answer.
   $("#qp").innerHTML = `
     <header class="qp-h"><div><p class="qp-pre">প্রশ্নপত্র · বিষয় কোড ${W.code}</p><p class="qp-t">${esc(W.post)}</p></div>
-      <p class="qp-st">${ready ? `<span><i class="bub on" aria-hidden="true"></i>${ready === total ? "সব" : bn(ready) + "টি"} উত্তর তৈরি</span>${ready < total ? `<span><i class="bub" aria-hidden="true"></i>${bn(total - ready)}টি আসছে</span>` : ""}` : `<span>${esc(W.subject)} · শুধু প্রশ্ন</span>`}</p></header>
+      <p class="qp-st">${ready ? `<span><i class="bub on" aria-hidden="true"></i>${ready === total ? "সব" : bn(ready) + "টি"} উত্তর তৈরি</span>${ready < total ? `<span><i class="bub" aria-hidden="true"></i>${bn(total - ready)}টি আসছে</span>` : ""}` : noted ? `<span><i class="bub nt" aria-hidden="true"></i>${bn(noted)}টির উত্তর অধ্যায়ের নোটে</span>${noted < total ? `<span><i class="bub" aria-hidden="true"></i>${bn(total - noted)}টি আসছে</span>` : ""}`
+        : `<span>${esc(W.subject)} · শুধু প্রশ্ন</span>`}</p></header>
     <p class="qp-rule"><b>দ্রষ্টব্য:</b> ${esc(W.rule)}</p>
     ${W.paperNote ? `<p class="qp-rule qp-warn">${W.paperNote}</p>` : ""}
-    <ol class="qp-list">${qs.map((q, i) => `${q.sec && q.sec !== (qs[i - 1] || {}).sec ? `<li class="qp-sec">${secName[q.sec] || q.sec}</li>` : ""}<li><a class="qp-row${has(q.n) ? "" : " wip"}" href="#/written/${key}/q${q.n}">
+    <ol class="qp-list">${qs.map((q, i) => `${q.sec && q.sec !== (qs[i - 1] || {}).sec ? `<li class="qp-sec">${secName[q.sec] || q.sec}</li>` : ""}<li><a class="qp-row${has(q.n) || inNote(q.n) ? "" : " wip"}" href="#/written/${key}/q${q.n}">
       <span class="qp-n">${bn(q.n)}</span><span class="qp-q">${wShort(q)}</span><span class="qp-m">${q.marks}</span>
-      <span class="qp-s">${has(q.n) ? "উত্তর পড়ুন →" : ready ? "উত্তর আসছে" : "প্রশ্ন দেখুন"}</span></a></li>`).join("")}</ol>`;
+      <span class="qp-s">${has(q.n) ? "উত্তর পড়ুন →" : inNote(q.n) ? "নোটে উত্তর →" : ready ? "উত্তর আসছে" : "প্রশ্ন দেখুন"}</span></a></li>`).join("")}</ol>`;
 
   // Every question, with its answer next to the answer script's margin.
   $("#wlist").innerHTML = qs.map((q, i) => `
@@ -682,6 +743,11 @@ function written(id, section) {
     const box = $(`#q${q.n}`), ans = $(".wq-ans", box), tpl = writtenAnswer(key, q.n);
     if (!tpl) {
       box.classList.add("wip");
+      if (inNote(q.n)) {
+        ans.innerHTML = `<div class="wq-notes"><p><i class="bub nt" aria-hidden="true"></i><span><b>উত্তর অধ্যায়ের নোটে</b>পূর্ণ নমুনা উত্তর আসার আগে এই প্রশ্নের, বা এর অংশবিশেষের, ধাপে ধাপে উত্তর পড়ুন:</span></p>
+          <ul>${notes[q.n].map(l => `<li><a href="${l.href}">${esc(l.label)}${l.part ? ` <small>(${l.part})</small>` : ""} <span aria-hidden="true">→</span></a></li>`).join("")}</ul></div>`;
+        return;
+      }
       ans.innerHTML = ready ? `<p class="wq-wip"><i class="bub" aria-hidden="true"></i><span><b>উত্তর তৈরি হচ্ছে</b>এই প্রশ্নের নমুনা উত্তর এখনো লেখা হয়নি। প্রশ্নটি পড়ে নিজে একবার খাতায় লিখে রাখুন।</span></p>` : "";
       return;
     }
@@ -713,6 +779,9 @@ function mcq(arg, sub) {
   // Blocks of 20, each read like a printed page: down the left column, then down the right.
   const PER = 20, blocks = Array.from({ length: Math.ceil(qs.length / PER) }, (_, b) => qs.slice(b * PER, b * PER + PER));
   const range = blk => `${bn(blk[0].n)}–${bn(blk[blk.length - 1].n)}`;
+  // The previous and next chapters' MCQs, above the paper and again at its end (the same look as a note's pager).
+  const chLink = (c, nx) => `<a class="chp${nx ? " nx" : ""}" href="#/mcq/${c.id}"><small>${nx ? "পরের অধ্যায় →" : "← আগের অধ্যায়"}</small><b>${bn(c.no)}. ${esc(c.name)}</b></a>`;
+  const chNav = cls => CH.length > 1 ? `<nav class="ch-nav${cls}" aria-label="অধ্যায় বদলান">${prev ? chLink(prev, false) : "<span></span>"}${next ? chLink(next, true) : ""}</nav>` : "";
   const item = q => `
         <div class="pp${q.warn ? " debated" : ""}" id="q${q.n}">
           <p class="pp-q"><b>${bn(q.n)}.</b><span>${qText(q)}</span></p>
@@ -726,6 +795,7 @@ function mcq(arg, sub) {
   view.innerHTML = `
   <div class="wrap">
     <article class="paper">
+      ${chNav(" at-top")}
       <header class="paper-head">
         <p class="pre">অধ্যায়ভিত্তিক MCQ · অধ্যায় ${bn(ch.no)}</p>
         <h1>${esc(ch.name)}</h1>
@@ -743,7 +813,7 @@ function mcq(arg, sub) {
         <div class="paper-cols">${blk.map(item).join("")}</div>
       </section>`).join("")}
       ${testable < qs.length ? `<p class="paper-end">${bn(qs.length - testable)}টি প্রশ্নে একাধিক সঠিক বিকল্প আছে, তাই সেগুলো পরীক্ষায় আসে না।</p>` : ""}
-      ${CH.length > 1 ? `<nav class="ch-nav" aria-label="অধ্যায়">${prev ? `<a href="#/mcq/${prev.id}">← ${esc(prev.name)}</a>` : "<span></span>"}${next ? `<a href="#/mcq/${next.id}">${esc(next.name)} →</a>` : ""}</nav>` : ""}
+      ${chNav("")}
     </article>
   </div>`;
   setupHideAnswers($(".paper"));

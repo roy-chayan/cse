@@ -82,7 +82,7 @@ code{font-family:var(--mono)}
 .wrap{max-width:1200px;margin:0 auto;padding:0 var(--gut)}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .label{margin:0 0 4px;font-size:13.5px;font-stretch:95%;color:var(--ink-3)}
-.m{font-family:var(--mono);font-size:.92em}
+.m{font-family:var(--mono);font-size:.92em;font-variant-ligatures:none}   /* "==" and "<=" stay two characters, as typed in code */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* ---------- the bubble ---------- */
@@ -146,17 +146,42 @@ code{font-family:var(--mono)}
 :root[data-theme="dark"] .logo-light{display:none !important}
 :root[data-theme="dark"] .logo-dark{display:block !important}
 .mast-lede{font-family:var(--serif);font-size:clamp(18px,2.1vw,22px);line-height:1.7;color:var(--ink-2);max-width:31em;margin:0}
-/* Motivational lines under the masthead, one at a time */
-.quotes{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 16px;padding:30px 0 0}
-.q-mark{font-family:var(--serif);font-size:58px;line-height:.9;color:var(--form)}
-.q-stage{display:grid;align-items:start;width:100%;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left}
+/* Motivational lines under the masthead, one at a time, on a strip of answer script (খাতা): the quote mark sits
+   in the margin behind the double margin line, the words sit on ruled lines, and the strip's bottom edge is the
+   7-second line that fills with blue before the next quote (renderQuotes() in app.js). */
+.quotes{position:relative;display:grid;grid-template-columns:72px minmax(0,1fr);margin-top:30px;background:var(--sheet);border-top:1px solid var(--rule-2)}
+.q-mark{padding-top:20px;border-right:4px double var(--form-line);font-family:var(--serif);font-size:64px;line-height:1;text-align:center;color:var(--form)}
+.q-main{min-width:0;padding:14px 22px 22px}
+.q-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-height:32px;margin-bottom:8px}
+.q-label{font-size:13.5px;font-stretch:92%;letter-spacing:.02em;color:var(--ink-3)}
+.q-tag{padding:0 8px;border:1px solid var(--form-line);border-radius:2px;font-size:13px;font-stretch:95%;line-height:1.75;color:var(--form-ink);white-space:nowrap}
+.q-tag.swap{animation:q-tag .5s ease .15s both}
+@keyframes q-tag{from{opacity:0}}
+.q-nav{display:flex;gap:8px;margin-left:auto}
+.q-btn{--s:32px;cursor:pointer}
+.q-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.q-btn:hover{background:var(--form-wash)}
+.q-btn:active{transform:scale(.92)}
+/* Ruled lines one line-height apart, so every line of the quote sits on one. */
+.q-stage{display:grid;align-items:start;width:100%;margin:0;padding:0;border:0;color:var(--ink);font:inherit;
+  font-family:var(--serif);font-size:clamp(19px,2.2vw,23px);line-height:1.7;text-align:left;
+  background:linear-gradient(transparent calc(1.7em - 1px),var(--rule) 0) 0 0/100% 1.7em}
 button.q-stage{cursor:pointer}
-.q-item{grid-area:1/1;margin:0;max-width:34em;font-family:var(--serif);font-size:clamp(19px,2.2vw,23px);line-height:1.7;color:var(--ink);
-  opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .45s ease,transform .45s ease,visibility 0s linear .45s}
+.q-item{grid-area:1/1;max-width:42em;opacity:0;visibility:hidden;transform:translateY(10px);
+  transition:opacity .4s ease,transform .4s ease,visibility 0s linear .4s}
 .q-item.on{opacity:1;visibility:visible;transform:none;transition:opacity .5s ease .2s,transform .5s ease .2s,visibility 0s}
 .q-item.out{transform:translateY(-10px)}
-@media (max-width:719px){.quotes{gap:0 10px;padding-top:24px}.q-mark{font-size:44px}}
-@media (prefers-reduced-motion:reduce){.q-item,.q-item.on{transition:none;transform:none}}
+.quotes.back .q-item{transform:translateY(-10px)}
+.quotes.back .q-item.out{transform:translateY(10px)}
+.quotes.back .q-item.on{transform:none}
+.q-bar{grid-column:1/-1;display:block;height:2px;background:var(--rule-2);overflow:hidden}
+.q-bar i{display:block;height:100%;background:var(--form);transform:scaleX(0);transform-origin:left}
+.q-bar i.run{animation:q-fill 7s linear forwards}
+.quotes.held .q-bar i,.quotes.away .q-bar i{animation-play-state:paused}
+@keyframes q-fill{to{transform:scaleX(1)}}
+.quotes:not(:has(.q-bar)){border-bottom:2px solid var(--rule-2)}
+@media (max-width:719px){.quotes{grid-template-columns:44px minmax(0,1fr);margin-top:24px}.q-mark{padding-top:16px;font-size:44px}.q-main{padding:12px 14px 18px}.q-btn{--s:30px}}
+@media (prefers-reduced-motion:reduce){.q-item,.q-item.on,.quotes.back .q-item{transition:none;transform:none}.q-tag.swap{animation:none}}
 @media (min-width:860px){.mast-row{grid-template-columns:auto 1fr;align-items:end;gap:64px}.mast-lede{padding-bottom:22px}}
 
 /* Key hints (the 1–4 shown beside exam options on a computer). */
@@ -192,24 +217,36 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .toc-key{display:flex;flex-wrap:wrap;gap:6px 22px;margin:22px 0 0;font-size:13.5px;color:var(--ink-3)}
 .toc-key span{display:inline-flex;align-items:center;gap:8px}
 
-/* ---------- ledger tables (past papers, paper picker) ---------- */
-.ledger{width:100%;border-collapse:collapse;font-size:15.5px;min-width:340px}
-.ledger th,.ledger td{padding:12px 12px 12px 0;text-align:left;border-bottom:1px solid var(--rule);vertical-align:middle}
-.ledger thead th{padding-top:0;padding-bottom:10px;font-size:13px;font-weight:400;font-stretch:90%;color:var(--ink-3);border-bottom:1px solid var(--ink)}
-.ledger tbody th{width:22%;font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.2;white-space:nowrap}
-.ledger tbody th small{display:block;font-family:var(--sans);font-size:13px;color:var(--ink-3);margin-top:2px}
-.ledger td a{text-decoration:none;white-space:nowrap}
-.ledger td a+a{margin-left:14px;padding-left:14px;border-left:1px solid var(--rule)}
-.ledger td a:hover{color:var(--form-ink);text-decoration:underline}
-.ledger td .go{color:var(--form-ink)}
-#wledger tbody tr{cursor:pointer}                       /* the whole row opens the paper (app.js home()) */
-#wledger tbody tr:hover td a{color:var(--form-ink);text-decoration:underline}
-.ledger tbody tr:hover>*{background:linear-gradient(var(--sunk),var(--sunk)) no-repeat 0 50%/100% calc(100% - 2px)}
-@media (max-width:620px){
-  .ledger td{padding-top:4px;padding-bottom:4px}
-  .ledger td a{display:flex;align-items:center;min-height:42px}
-  .ledger td a+a{margin:0;padding-left:0;border:0}
-  .ledger tbody th{font-size:19px}
+/* ---------- home: the written papers as a register ----------
+   Two columns like the contents above (papers with model answers, then the rest), one link per paper. The row's
+   bubbles are its questions: filled = full model answer, half = answered in a chapter note, empty = not yet. */
+.wr-cols{display:grid;gap:40px 64px}
+@media (min-width:880px){.wr-cols{grid-template-columns:1fr 1fr}}
+.wr-h{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;font-family:var(--serif);font-weight:400;font-size:20px;line-height:1.35}
+.wr-h small{font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--ink-3)}
+.wr-col ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.wr{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:0 14px;min-height:64px;padding:9px 0;
+  border-bottom:1px solid var(--rule);text-decoration:none;color:inherit}
+.wr-no{font-family:var(--serif);font-size:21px;line-height:1.15}
+.wr-no small{display:block;margin-top:3px;font-family:var(--sans);font-size:12.5px;color:var(--ink-3)}
+.wr-body{display:grid;gap:6px;min-width:0}
+.wr-dots{display:flex;flex-wrap:wrap;gap:5px}
+.wr-dots .dot{width:11px;height:11px}
+.wr-sub{font-size:13px;line-height:1.45;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wr-st{font-size:14px;color:var(--ink-2);white-space:nowrap}
+.wr-st.ok{color:var(--ok)}
+.wr-st::after{content:" →";color:var(--form-ink)}
+.wr:hover{background:linear-gradient(var(--sunk),var(--sunk)) no-repeat 0 50%/100% calc(100% - 2px)}
+.wr:hover .wr-no,.wr:hover .wr-st{color:var(--form-ink)}
+.wr:focus-visible{outline:2px solid var(--form);outline-offset:2px}
+/* Phones: two papers to a row, each cell the exam, its bubbles and its state, stacked. */
+@media (max-width:560px){
+  .wr-col ol{display:grid;grid-template-columns:1fr 1fr;column-gap:18px}
+  .wr{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:0;padding:11px 0 12px}
+  .wr-no{font-size:19px}.wr-no small{display:inline;margin-left:7px}
+  .wr-sub{display:none}
+  .wr-dots{gap:4px}.wr-dots .dot{width:10px;height:10px}
+  .wr-st{font-size:13.5px}
 }
 
 /* ---------- home: make-your-own-exam strip ---------- */
@@ -356,7 +393,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 
 /* Code */
 .code{margin:0;padding:16px 20px;overflow-x:auto;background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--ink);
-  font-family:var(--mono);font-size:14.5px;line-height:1.75;tab-size:4;color:var(--ink)}
+  font-family:var(--mono);font-size:14.5px;line-height:1.75;tab-size:4;color:var(--ink);font-variant-ligatures:none}
 .code .k{color:var(--form-ink)}
 .code .s{color:var(--ok)}
 .code .c{color:var(--ink-3);font-style:italic}
@@ -437,6 +474,16 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .pp-blk .pp-sec{margin:0 0 10px}
 /* Note: the practice block at the end, and working blocks that follow one another */
 .note-acts{display:flex;flex-wrap:wrap;gap:12px 14px;margin:20px 0 0}
+/* The note's practice pair (noteActions() in app.js): icon, a title with a line under it, and an arrow. */
+.note-acts.na-top{margin-top:26px}
+.btn.na{justify-content:flex-start;gap:14px;min-height:62px;padding:9px 18px 9px 16px;text-align:left}
+.na-i{flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.na-t{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.na-t b{font-weight:500;font-size:16px}
+.na-t small{font-size:13px;font-weight:400;opacity:.82}
+.na-go{margin-left:auto;padding-left:10px;transition:transform .15s}
+.btn.na:hover .na-go{transform:translateX(3px)}
+@media (max-width:560px){.note-acts .btn.na{flex:1 1 100%}}
 .note-links{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--ink)}
 .note-links li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 18px;padding:12px 0;border-bottom:1px solid var(--rule)}
 .note-links a{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--form-ink)}
@@ -540,8 +587,12 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .toc .nl{flex:none;display:flex;align-items:center;padding-left:16px;font-size:14px;color:var(--form-ink);text-decoration:none}
 .toc .nl:hover{text-decoration:underline}
 .paper-end{margin:26px 0 0;padding-top:14px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink-3)}
-.ch-nav{display:flex;justify-content:space-between;gap:12px;margin-top:14px}
-.ch-nav a{display:inline-flex;align-items:center;min-height:44px;color:var(--form-ink)}
+/* A chapter's MCQ page: the previous and next chapters, small above the paper and full size at its end (.chp, as on notes). */
+.ch-nav{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:14px}
+.ch-nav.at-top{margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.ch-nav.at-top .chp{padding:2px 0 0;gap:1px}
+.ch-nav.at-top .chp b{font-size:16.5px;line-height:1.4}
+.ch-nav.at-top .chp small{font-size:12.5px}
 @media (max-width:420px){.pp ol{grid-template-columns:1fr}}
 
 /* ---------- written paper with model answers ---------- */
@@ -818,6 +869,8 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 .flow svg text.yn{font-size:14px;fill:var(--form-ink)}
 .flow svg text.sm{font-size:14px;fill:var(--ink-3)}
 .flow svg text.big{font-size:22px;font-weight:600;fill:var(--form-ink)}
+.flow svg text.st{text-anchor:start}                  /* left-aligned lines, e.g. a command prompt */
+.flow svg text.mono{font-family:var(--mono);font-size:14px;font-variant-ligatures:none}
 .flow .fa.dash{stroke-dasharray:5 4}
 .flow .busl{fill:none;stroke:var(--form-line);stroke-width:7;stroke-linecap:round}
 .ans-body .expand+.prose{margin-top:12px}
@@ -830,11 +883,17 @@ a.chp:hover b{text-decoration:underline;text-underline-offset:4px}
 /* The block diagram is drawn wider than the flowchart; on phones it keeps a readable size and scrolls sideways. */
 .fig.wide.alu svg{min-width:430px;max-width:460px}
 
-/* Home: written papers list */
-.ledger .na{color:var(--ink-3)}
-.wl-n{display:block;font-size:13px;color:var(--ink-3)}
-.wl-ok{font-size:14.5px;color:var(--ok)}
-.ledger td.wl-st{white-space:nowrap;padding-right:0}
+/* Paper page: a question answered in a chapter note (no model answer yet) gets a half-filled bubble and its links. */
+.bub.nt{background:var(--form-wash)}
+.wq-notes{padding:16px 18px;border:1.5px solid var(--form-line);background:var(--sheet)}
+.wq-notes p{display:flex;align-items:flex-start;gap:14px;margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2)}
+.wq-notes p .bub{--s:26px;margin-top:2px}
+.wq-notes b{display:block;font-family:var(--serif);font-weight:400;font-size:19px;color:var(--ink)}
+.wq-notes ul{list-style:none;margin:10px 0 0 40px;padding:0}
+.wq-notes li+li{border-top:1px solid var(--rule)}
+.wq-notes a{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;padding:8px 0;color:var(--form-ink);text-decoration:none}
+.wq-notes a:hover{text-decoration:underline}
+.wq-notes small{font-size:13px;color:var(--ink-3)}
 
 /* ---------- exam setup ---------- */
 .setup .doc-head{padding-bottom:20px}

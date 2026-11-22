@@ -4,7 +4,7 @@
    noExam: true keeps a question out of exams (more than one option is correct); it still shows in the chapter list.
    A question's id is "<chapter id>-<number>", so the order must not change once people have practised. */
 (window.ICT_MCQ = window.ICT_MCQ || []).push({
-  id: "ch05", no: 5, name: "অপারেটিং সিস্টেম",
+  id: "ch05", no: 5, name: "অপারেটিং সিস্টেম", note: "#/note/operating-system",
   questions: [
     // প্রশ্ন ১–১০ · অপারেটিং সিস্টেম ও এর প্রকার
     { q: "অপারেটিং সিস্টেম (OS) কী?", o: ["একটি অ্যাপ্লিকেশন সফটওয়্যার", "একটি হার্ডওয়্যার ডিভাইস", "একটি সিস্টেম সফটওয়্যার", "একটি প্রোগ্রামিং ভাষা"], a: "গ",
