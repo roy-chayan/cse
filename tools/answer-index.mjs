@@ -6,7 +6,7 @@ import vm from "node:vm";
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 const window = { ICT_ANSWERS: {} }, ctx = { window };
 vm.createContext(ctx);
-for (const f of fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => f.endsWith(".js"))) vm.runInContext(read("answers/" + f), ctx);
+for (const f of fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => /^\d+-school\.js$/.test(f))) vm.runInContext(read("answers/" + f), ctx);
 const all = { ...window.ICT_ANSWERS };
 for (const m of read("index.html").matchAll(/<template id="wa-(\d+-school)-(\d+)">([\s\S]*?)<\/template>/g)) (all[m[1]] ||= {})[m[2]] = m[3];
 const strip = s => s.replace(/<sub>(\w+)<\/sub>/g, "_$1").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();

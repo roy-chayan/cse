@@ -15,6 +15,7 @@ Run this after adding MCQs, past questions or links. It changes nothing, it only
 - every past written question in `mcq/written-prev.js` points to a real paper, question, অথবা and part
 - every answer link (`ans`) lands on a real note section or written paper
 - every part of an earlier answer that a model answer reuses (`data-include`) exists
+- every ask of every written paper falls into a theme of the "বারবার আসা প্রশ্ন" page (`mcq/written-themes.js`), and each theme's note link works
 
 It ends with "No problems found." or a list of what to fix.
 
@@ -26,7 +27,15 @@ node tools/answers/build-9-school.mjs
 
 Each script writes one file, `answers/<no>-school.js`, so edit the script and rebuild rather than the output. Worked blocks (calculations, circuits, flowcharts) are copied from the chapter notes in `index.html` when the script runs, so rerun it after changing one of those blocks. A question that an earlier paper already asked reuses that answer instead of repeating it. Every number is checked against a computation before the file is written, and the build stops with "check failed" if a check or a reused part doesn't match. `answers/lib.mjs` holds the shared pieces (`ok`, `bn`, `part`, `include`, `side`, `writeAnswers` and so on). When only a piece of an earlier answer fits (a reuse always brings the whole part), `fromAnswer` copies just that piece at build time, as the ৮ম script does for the dot-matrix printer. `seriesSum` runs a series such as 1 + 2 + … + 50 and draws its flowchart and trace table from the same run. `sopCircuit` draws a sum-of-products circuit exactly as printed (used where a paper's overbars didn't print), and `fromSection` lifts a whole note sub-section, smaller headings included.
 
-Every paper from ৩য় to ১৮তম now has full model answers (১৮তম's are templates in `index.html`; ১১তম–১৭তম were written by hand in `answers/`; ৩য়–১০ম come from these scripts). After changing a note block that a script lifts, rerun the scripts for ৩য়–১০ম and then `node tools/check-site.mjs`.
+Every paper from ৩য় to ১৮তম now has full model answers in `answers/<no>-school.js`: ১১তম–১৮তম written by hand, ৩য়–১০ম made by these scripts. After changing a note block that a script lifts, rerun the scripts for ৩য়–১০ম and then `node tools/check-site.mjs`.
+
+## answers/bundle.mjs: what the site actually loads
+
+```
+node tools/answers/bundle.mjs
+```
+
+The site never loads `answers/<no>-school.js` directly. Every visit loads only `answers/index.js` (which questions have answers, under 1 KB). Opening a paper loads one bundle, `answers/paper/<no>-school.js`: that paper's answers plus exactly the earlier answers it reuses. Both are generated from the answer files; every build script regenerates them, but after editing a hand-written answer file (১১তম–১৮তম) run `bundle.mjs` yourself. `check-site.mjs` reports when they are out of date.
 
 To find an earlier answer to reuse, list every part of every model answer, optionally filtered by words:
 

@@ -5,16 +5,18 @@
 //   - every chapter note: each practice set names real MCQs, and every MCQ of the chapter is in some set
 //   - every past written question (mcq/written-prev.js): its paper, question, অথবা and part exist
 //   - every answer link (ans): a note link lands on a real section id; a written link names a real paper
-//   - every #/note/… link in index.html and answers/*.js lands on a real section
+//   - every #/note/… link in index.html, answers/*.js and mcq/written-themes.js lands on a real section
+//   - every ask of every written paper falls into a theme of the most-repeated page (mcq/written-themes.js)
 //   - every reused answer part (data-include) names an answer and a part that exist
+//   - answers/index.js and the per-paper bundles in answers/paper/ match the answer files
 import fs from "node:fs";
 import vm from "node:vm";
-import { allAnswers, includeProblems } from "./answers/lib.mjs";
+import { allAnswers, includeProblems, siteAnswers } from "./answers/lib.mjs";
 
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 const window = {}, ctx = { window };
 vm.createContext(ctx);
-for (const f of ["demo-data.js", "written-papers.js", "mcq/chapters.js", "mcq/written-prev.js",
+for (const f of ["demo-data.js", "written-papers.js", "mcq/chapters.js", "mcq/written-prev.js", "mcq/written-themes.js",
   ...fs.readdirSync(new URL("../mcq/", import.meta.url)).filter(f => /^ch\d+\.js$/.test(f)).sort().map(f => "mcq/" + f)]) vm.runInContext(read(f), ctx);
 const html = read("index.html"), app = read("app.js");
 const problems = [], say = s => problems.push(s);
@@ -78,16 +80,31 @@ for (const x of P.items) {
 }
 
 // ---- every note link anywhere: notes, answer templates and answer files ----
-const linkSources = [["index.html", html], ...fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => f.endsWith(".js")).map(f => ["answers/" + f, read("answers/" + f)])];
+const linkSources = [["index.html", html], ["mcq/written-themes.js", read("mcq/written-themes.js")], ...fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => f.endsWith(".js")).map(f => ["answers/" + f, read("answers/" + f)])];
 for (const [file, text] of linkSources)
   for (const m of text.matchAll(/#\/note\/([a-z-]+)\/([\w-]+)/g)) {
     if (!noteIds[m[1]]) say(`${file}: link to unknown note "${m[1]}"`);
     else if (!noteIds[m[1]].has(m[2])) say(`${file}: link #/note/${m[1]}/${m[2]}, but that note has no such section`);
   }
 
-// ---- every reused answer part (data-include) exists ----
+// ---- the most-repeated page: every ask of every paper lands in a theme ----
+{
+  const { themes, loose } = window.ICT_REPEAT.group(W);
+  for (const x of loose) say(`written-themes: ${x.key} প্রশ্ন ${x.n}${x.o ? " অথবা" : ""}${x.l ? " " + x.l : ""} fits no theme: "${x.t}"`);
+  for (const t of themes) if (!/^#\/note\//.test(t.note)) say(`written-themes: theme ${t.id} has no note link`);
+}
+
+// ---- every reused answer part (data-include) exists; what the site loads matches the answer files ----
 const ANS = allAnswers();
 includeProblems(ANS).forEach(say);
+{
+  const { index, bundles } = siteAnswers(ANS), stale = [];
+  const has = f => fs.existsSync(new URL("../" + f, import.meta.url));
+  if (!has("answers/index.js") || read("answers/index.js") !== index) stale.push("answers/index.js");
+  for (const [p, text] of Object.entries(bundles)) if (!has(`answers/paper/${p}.js`) || read(`answers/paper/${p}.js`) !== text) stale.push(`answers/paper/${p}.js`);
+  if (has("answers/paper")) for (const f of fs.readdirSync(new URL("../answers/paper/", import.meta.url))) if (!bundles[f.replace(/\.js$/, "")]) stale.push(`answers/paper/${f} (no such paper)`);
+  if (stale.length) say(`out of date, run node tools/answers/bundle.mjs: ${stale.join(", ")}`);
+}
 const modelAnswers = Object.values(ANS).reduce((t, qs) => t + Object.keys(qs).length, 0);
 
 console.log(`${chapters.length} chapters · ${mcqs} MCQs · ${Object.keys(notes).length} notes · ${P.items.length} past written questions · ${Object.keys(W).length} papers · ${modelAnswers} model answers`);
