@@ -218,35 +218,68 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .toc-key span{display:inline-flex;align-items:center;gap:8px}
 
 /* ---------- home: the written papers as a register ----------
-   Two columns like the contents above (papers with model answers, then the rest), one link per paper. The row's
-   bubbles are its questions: filled = full model answer, half = answered in a chapter note, empty = not yet. */
+   Two columns like the contents above (newer and older papers once all have answers; otherwise papers with model
+   answers, then the rest), one link per paper: the exam and year, the subject and number of questions, "পড়ুন". */
 .wr-cols{display:grid;gap:40px 64px}
 @media (min-width:880px){.wr-cols{grid-template-columns:1fr 1fr}}
+@media (min-width:561px) and (max-width:879px){.wr-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px}}
+/* Side by side, the two headings share one row, so the lists start level even when one subtitle wraps. */
+@media (min-width:561px){.wr-cols{grid-template-rows:auto auto}.wr-col{display:grid;grid-row:span 2;grid-template-rows:subgrid;row-gap:0}}
 .wr-h{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;font-family:var(--serif);font-weight:400;font-size:20px;line-height:1.35}
 .wr-h small{font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--ink-3)}
 .wr-col ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
-.wr{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:0 14px;min-height:64px;padding:9px 0;
+.wr{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:0 14px;min-height:56px;padding:9px 0;
   border-bottom:1px solid var(--rule);text-decoration:none;color:inherit}
 .wr-no{font-family:var(--serif);font-size:21px;line-height:1.15}
 .wr-no small{display:block;margin-top:3px;font-family:var(--sans);font-size:12.5px;color:var(--ink-3)}
-.wr-body{display:grid;gap:6px;min-width:0}
-.wr-dots{display:flex;flex-wrap:wrap;gap:5px}
-.wr-dots .dot{width:11px;height:11px}
-.wr-sub{font-size:13px;line-height:1.45;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wr-sub{min-width:0;font-size:13px;line-height:1.45;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wr-st{font-size:14px;color:var(--ink-2);white-space:nowrap}
-.wr-st.ok{color:var(--ok)}
 .wr-st::after{content:" →";color:var(--form-ink)}
 .wr:hover{background:linear-gradient(var(--sunk),var(--sunk)) no-repeat 0 50%/100% calc(100% - 2px)}
 .wr:hover .wr-no,.wr:hover .wr-st{color:var(--form-ink)}
 .wr:focus-visible{outline:2px solid var(--form);outline-offset:2px}
-/* Phones: two papers to a row, each cell the exam, its bubbles and its state, stacked. */
+.wr-more{margin:26px 0 0}
+/* Phones: two papers to a row, each cell the exam, the number of questions and "পড়ুন", stacked. */
 @media (max-width:560px){
   .wr-col ol{display:grid;grid-template-columns:1fr 1fr;column-gap:18px}
-  .wr{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:0;padding:11px 0 12px}
+  .wr{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:0;padding:11px 0 12px}
   .wr-no{font-size:19px}.wr-no small{display:inline;margin-left:7px}
-  .wr-sub{display:none}
-  .wr-dots{gap:4px}.wr-dots .dot{width:10px;height:10px}
+  .wr-subj{display:none}
   .wr-st{font-size:13.5px}
+}
+
+/* ---------- most-repeated written questions (#/repeat) ----------
+   A ranked list of themes. Each: its rank, title, how many exams asked it, a bubble per exam (filled = asked; the
+   bubbles read like one line of an answer sheet), the asks themselves (the notes' .prev list) and a note link. */
+.repeat{padding-bottom:72px}
+.repeat .doc-head h1{font-size:clamp(38px,7vw,72px)}
+.pick.rp-pick{gap:8px 14px;margin:4px 0 0}
+.rp-cap{display:flex;flex-wrap:wrap;gap:2px 14px;margin:10px 0 0;font-size:15px;color:var(--ink-2)}
+.rp-cap span{font-size:13px;color:var(--ink-3)}
+.rp-list{list-style:none;margin:22px 0 0;padding:0;border-top:1.5px solid var(--ink)}
+.rp{display:grid;grid-template-columns:56px minmax(0,1fr);gap:0 18px;padding:20px 0 18px;border-bottom:1px solid var(--rule)}
+.rp-no{font-family:var(--serif);font-size:30px;line-height:1.15;color:var(--form-ink)}
+.rp-main{min-width:0;max-width:46em}
+.rp-h{margin:0;font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.45}
+.rp-n{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:4px 0 0;font-size:14px;color:var(--ink-3)}
+.rp-n b{font-family:var(--serif);font-weight:400;font-size:21px;color:var(--ink)}
+.rp-n span:first-of-type{margin-left:-8px}
+.rp-n .xt{margin:0}
+.rp-row{list-style:none;display:flex;flex-wrap:wrap;gap:6px 5px;margin:12px 0 0;padding:0}
+.rp-row li{display:grid;justify-items:center;gap:3px;width:19px}
+.rp-row .bub{--s:15px}
+.rp-row small{font-family:var(--mono);font-size:10.5px;line-height:1;color:var(--ink-3)}
+.rp-q{margin-top:10px}
+.rp-note{display:inline-block;margin-top:12px;font-size:14.5px;color:var(--form-ink)}
+.rp-wait{margin:48px 0}
+@media (max-width:560px){
+  .rp{grid-template-columns:30px minmax(0,1fr);gap:0 10px}
+  .rp-no{font-size:22px}
+  .rp-h{font-size:19px}
+  .rp-row{gap:6px 2px}
+  .rp-row li{width:18px}
+  .pick.rp-pick{gap:6px 0;justify-content:space-between}
+  .pick.rp-pick label{min-width:40px;justify-content:center}
 }
 
 /* ---------- home: make-your-own-exam strip ---------- */

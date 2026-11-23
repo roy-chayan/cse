@@ -188,30 +188,30 @@ function home() {
   const half = Math.ceil(list.length / 2);
   $("#toc").innerHTML = list.length ? `<ol>${list.slice(0, half).map(row).join("")}</ol><ol start="${half + 1}">${list.slice(half).map(row).join("")}</ol>` : "";
 
-  // Written papers (school level only), newest first, as a register in two columns like the contents above: papers
-  // with model answers on the left, the rest on the right. Each row is one link with a bubble per question, filled
-  // when its full model answer is written, half-filled when a chapter note answers it (written-prev.js), else empty.
+  // Written papers (school level only), newest first, as a register in two columns like the contents above. Each row
+  // is one link: the exam and year, the subject and number of questions, and "পড়ুন". Only a paper that still lacks
+  // model answers says so in place of "পড়ুন" (how many are written, or answered in a chapter note via written-prev.js).
   const W = D.written || {}, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a));
   const papers = keys.map(k => {
-    const w = W[k], st = w.questions.map(q => writtenAnswer(k, q.n) ? 2 : noteAnswers(k, q.n).length ? 1 : 0);
+    const w = W[k], st = w.questions.map(q => hasAnswer(k, q.n) ? 2 : noteAnswers(k, q.n).length ? 1 : 0);
     return { k, w, st, n: st.length, full: st.filter(s => s === 2).length, note: st.filter(s => s === 1).length };
   });
   const done = papers.filter(p => p.full), rest = papers.filter(p => !p.full), sum = (g, f) => g.reduce((t, p) => t + p[f], 0);
   const span = g => g.length > 1 ? `${ord(parseInt(g[g.length - 1].k))}–${ord(parseInt(g[0].k))}` : g.length ? ord(parseInt(g[0].k)) : "";
-  const state = p => p.full ? (p.full === p.n ? "সব উত্তর" : `${bn(p.full)}/${bn(p.n)} উত্তর`) : p.note ? `${bn(p.note)}/${bn(p.n)} নোটে` : "শুধু প্রশ্ন";
+  const state = p => p.full ? (p.full === p.n ? "পড়ুন" : `${bn(p.full)}/${bn(p.n)} উত্তর`) : p.note ? `${bn(p.note)}/${bn(p.n)} নোটে` : "শুধু প্রশ্ন";
   const paperRow = p => `<li><a class="wr" href="#/written/${p.k}">
       <span class="wr-no">${ord(parseInt(p.k))}<small>${bn(p.w.year)}</small></span>
-      <span class="wr-body"><span class="wr-dots" aria-hidden="true">${p.st.map(s => `<i class="dot${s === 2 ? " full" : s === 1 ? " half" : ""}"></i>`).join("")}</span>
-        <span class="wr-sub">${esc(p.w.subject)} · ${bn(p.n)}টি প্রশ্ন</span></span>
-      <span class="wr-st${p.full ? " ok" : ""}">${state(p)}</span></a></li>`;
+      <span class="wr-sub"><span class="wr-subj">${esc(p.w.subject)} · </span>${bn(p.n)}টি প্রশ্ন</span>
+      <span class="wr-st">${state(p)}</span></a></li>`;
   const col = (g, title, sub) => g.length ? `<section class="wr-col"><h3 class="wr-h">${title}<small>${span(g)} · ${sub}</small></h3><ol>${g.map(paperRow).join("")}</ol></section>` : "";
   const qn = sum(papers, "n"), fulls = sum(papers, "full"), notes = sum(rest, "note");
   $("#wLedeHome").textContent = `স্কুল পর্যায়ের সহকারী শিক্ষক (কম্পিউটার / আইসিটি) পদের ${bn(papers.length)}টি লিখিত প্রশ্নপত্র, মূল প্রশ্নপত্রের ক্রমে। ` +
-    `${bn(qn)}টি প্রশ্নের ${bn(fulls)}টির পূর্ণ নমুনা উত্তর আছে${notes ? `, আরও ${bn(notes)}টির উত্তর অধ্যায়ের নোটে` : ""}।`;
-  $("#wreg").innerHTML = `<div class="wr-cols">` +
-    col(done, "নমুনা উত্তরসহ", "প্রতিটি প্রশ্নের পূর্ণ উত্তর, নম্বর বণ্টন মেনে") +
-    col(rest, "প্রশ্ন, উত্তর অধ্যায়ের নোটে", "প্রতিটি প্রশ্নের নিচে নোটের লিংক") + `</div>
-    <p class="toc-key"><span><i class="dot full"></i>পূর্ণ নমুনা উত্তর</span><span><i class="dot half"></i>অধ্যায়ের নোটে উত্তর</span><span><i class="dot"></i>এখনো নেই</span><span>প্রতিটি বৃত্ত একটি প্রশ্ন</span></p>`;
+    (fulls === qn ? `${bn(qn)}টি প্রশ্নের প্রতিটির পূর্ণ নমুনা উত্তর আছে।` : `${bn(qn)}টি প্রশ্নের ${bn(fulls)}টির পূর্ণ নমুনা উত্তর আছে${notes ? `, আরও ${bn(notes)}টির উত্তর অধ্যায়ের নোটে` : ""}।`);
+  // Once every paper has its answers, the two columns are simply the newer and the older half.
+  const newer = Math.ceil(done.length / 2), all = "প্রতিটি প্রশ্নের পূর্ণ উত্তর, নম্বর বণ্টন মেনে";
+  const cols = rest.length ? col(done, "নমুনা উত্তরসহ", all) + col(rest, "প্রশ্ন, উত্তর অধ্যায়ের নোটে", "প্রতিটি প্রশ্নের নিচে নোটের লিংক")
+    : col(done.slice(0, newer), "সাম্প্রতিক প্রশ্নপত্র", all) + col(done.slice(newer), "পুরোনো প্রশ্নপত্র", all);
+  $("#wreg").innerHTML = `<div class="wr-cols">${cols}</div>`;
 }
 
 /* A note's two ways on to practice, "read the chapter's MCQs" and "take a timed exam on it": under the title so they
@@ -237,7 +237,7 @@ function noteAnswers(key, n) {
   if (!P) return [];
   return P.items.filter(x => x.e === e && x.n === n && x.ans && x.ans.startsWith("#/note/") && !seen.has(x.ans) && seen.add(x.ans)).map(x => {
     const ch = allChapters().find(c => c.id === x.c);
-    return { href: x.ans, label: ch ? `অধ্যায় ${bn(ch.no)} · ${ch.name}` : "অধ্যায়ের নোট", part: [x.o ? "অথবা" : "", x.l || ""].filter(Boolean).join(" ") };
+    return { href: x.ans, label: ch ? `অধ্যায় ${bn(ch.no)} · ${ch.name}` : "অধ্যায়ের নোট", part: [x.o || x.alt ? "অথবা" : "", x.l || ""].filter(Boolean).join(" ") };
   });
 }
 
@@ -312,14 +312,16 @@ function note(id, section) {
 /* An item that points into a paper (n, o, l) gets its text, marks and model-answer link from that paper. */
 function prevItem(x) {
   if (!x.n) return x;
-  const key = `${x.e}-school`, p = D.written[key], q = p && p.questions.find(y => y.n === x.n);
+  const key = `${x.e}-school`, ans = hasAnswer(key, x.n) ? `#/written/${key}/q${x.n}` : x.ans;
+  if (x.q) return { ...x, ans };   // chapter ১'s items carry their own text; their n only places them in the paper
+  const p = D.written[key], q = p && p.questions.find(y => y.n === x.n);
   if (!q) return null;
   const src = x.o ? wAlts(q)[x.o - 1] : (q.parts || q.q);
   if (!src) return null;
   const parts = typeof src === "string" ? null : x.l ? src.filter(pt => pt.l === x.l) : src;
   const text = parts ? parts.map(pt => (x.l ? "" : `${pt.l}. `) + pt.q).join(" ") : src;
   const m = parts && x.l && parts[0] && parts[0].m ? parts[0].m : marksTotal(q.marks);
-  return { ...x, q: text, m, alt: x.o ? 1 : 0, ans: writtenAnswer(key, x.n) ? `#/written/${key}/q${x.n}` : x.ans };
+  return { ...x, q: text, m, alt: x.o ? 1 : 0, ans };
 }
 
 function renderPrev(chId) {
@@ -633,10 +635,29 @@ function setupConverter() {
 
 /* ================= WRITTEN PAPER WITH MODEL ANSWERS ================= */
 /* #/written/<paper>[/q<n>]: the question paper on top, then every question with its model answer.
-   Questions come from KHATA_DEMO.written; each answer is a <template id="wa-<paper>-<n>"> in index.html.
+   Questions come from KHATA_DEMO.written (written-papers.js); answers from the paper's bundle (below).
    A question without one shows "উত্তর তৈরি হচ্ছে". */
-/* A model answer is a <template id="wa-<paper>-<n>"> in index.html (the ১৮তম paper), or a string in
-   answers/<paper>.js, which adds itself to window.ICT_ANSWERS (later papers, one file each). */
+/* Model answers live in answers/<paper>.js, but the page never loads those. Every visit loads only answers/index.js
+   (which questions have answers), enough for the home page, the notes and a paper's question list. Opening a paper
+   loads one bundle, answers/paper/<paper>.js: its answers plus exactly the earlier answers it reuses. Both are made
+   by the tools (tools/answers/bundle.mjs). A <template id="wa-<paper>-<n>"> in index.html also still counts. */
+const hasAnswer = (paper, n) => !!document.getElementById(`wa-${paper}-${n}`) || ((window.ICT_ANSWER_INDEX || {})[paper] || []).includes(n);
+/* A script loaded only when a page needs it, once per visit: true once loaded, the Promise while loading. */
+const scripts = new Map();
+const scriptReady = src => scripts.get(src) === true;
+function loadScript(src) {
+  if (scriptReady(src)) return Promise.resolve();
+  if (!scripts.has(src)) scripts.set(src, new Promise((done, fail) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => { scripts.set(src, true); done(); };
+    s.onerror = () => { scripts.delete(src); s.remove(); fail(new Error(src)); };   // a later visit tries again
+    document.head.appendChild(s);
+  }));
+  return scripts.get(src);
+}
+const answersReady = paper => scriptReady(`answers/paper/${paper}.js`);
+const loadAnswers = paper => loadScript(`answers/paper/${paper}.js`);
 const ansCache = new Map();
 const writtenAnswer = (paper, n) => {
   const t = document.getElementById(`wa-${paper}-${n}`);
@@ -690,7 +711,7 @@ function written(id, section) {
   const sections = qs.some(q => q.sec), secName = { "ক": "ক বিভাগ", "খ": "খ বিভাগ" };
   mount("t-written");
   document.title = `লিখিত উত্তর · ${W.exam} · ${W.level} · ICT মাস্টার`;
-  const has = n => !!writtenAnswer(key, n), ready = qs.filter(q => has(q.n)).length;
+  const has = n => hasAnswer(key, n), ready = qs.filter(q => has(q.n)).length;
   // A question without a model answer may still be answered in a chapter note; those get a half-filled bubble and links.
   const notes = Object.fromEntries(qs.map(q => [q.n, has(q.n) ? [] : noteAnswers(key, q.n)]));
   const inNote = n => notes[n].length > 0, noted = qs.filter(q => inNote(q.n)).length;
@@ -739,32 +760,108 @@ function written(id, section) {
         <p class="wq-foot">${i < total - 1 ? `<a href="#/written/${key}/q${qs[i + 1].n}">পরের প্রশ্ন ${bn(qs[i + 1].n)} →</a>` : `<a href="#/written/${key}/qp">প্রশ্নপত্রে ফিরুন ↑</a>`}</p>
       </div>
     </section>`).join("");
-  qs.forEach(q => {
-    const box = $(`#q${q.n}`), ans = $(".wq-ans", box), tpl = writtenAnswer(key, q.n);
-    if (!tpl) {
-      box.classList.add("wip");
-      if (inNote(q.n)) {
-        ans.innerHTML = `<div class="wq-notes"><p><i class="bub nt" aria-hidden="true"></i><span><b>উত্তর অধ্যায়ের নোটে</b>পূর্ণ নমুনা উত্তর আসার আগে এই প্রশ্নের, বা এর অংশবিশেষের, ধাপে ধাপে উত্তর পড়ুন:</span></p>
-          <ul>${notes[q.n].map(l => `<li><a href="${l.href}">${esc(l.label)}${l.part ? ` <small>(${l.part})</small>` : ""} <span aria-hidden="true">→</span></a></li>`).join("")}</ul></div>`;
-        return;
-      }
-      ans.innerHTML = ready ? `<p class="wq-wip"><i class="bub" aria-hidden="true"></i><span><b>উত্তর তৈরি হচ্ছে</b>এই প্রশ্নের নমুনা উত্তর এখনো লেখা হয়নি। প্রশ্নটি পড়ে নিজে একবার খাতায় লিখে রাখুন।</span></p>` : "";
-      return;
-    }
-    const part = tpl.content.cloneNode(true), side = part.querySelector("aside.side");
-    ans.appendChild(part.querySelector(".ans-body"));
-    fillIncludes(ans);
-    if (side) { side.classList.add("wq-side"); box.appendChild(side); }
-    $(".wq-q", box).insertAdjacentHTML("afterend", '<button class="btn line sm reveal" type="button">উত্তর দেখুন</button>');
-  });
-
-  setupHideAnswers($(".written"));
-  setupSectionBar(".wq");
+  const page = view.firstElementChild, slot = q => $(".wq-ans", $(`#q${q.n}`));
+  const note = (b, s) => `<p class="wq-wip"><i class="bub" aria-hidden="true"></i><span><b>${b}</b>${s}</span></p>`;
   $(".written").addEventListener("click", e => {
+    if (e.target.closest("[data-retry]")) return route();
     const a = e.target.closest('a[href^="#/written/"]');
     if (a && !a.closest("#secnav") && scrollToLink(a)) e.preventDefault();
   });
-  if (section && document.getElementById(section)) scrollOnOpen(section);
+  // The answers come in the paper's own bundle: the question paper shows at once, each answer when the bundle arrives.
+  if (ready && !answersReady(key)) {
+    qs.forEach(q => has(q.n) && (slot(q).innerHTML = note("উত্তর আনা হচ্ছে…", "")));
+    loadAnswers(key).then(() => view.firstElementChild === page && fillAnswers(),
+      () => view.firstElementChild === page && qs.forEach(q => has(q.n) && (slot(q).innerHTML = note("উত্তর আনা যায়নি",
+        `ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button>`))));
+  } else fillAnswers();
+
+  function fillAnswers() {
+    qs.forEach(q => {
+      const box = $(`#q${q.n}`), ans = $(".wq-ans", box), tpl = writtenAnswer(key, q.n);
+      ans.replaceChildren();
+      if (!tpl) {
+        box.classList.add("wip");
+        if (inNote(q.n)) {
+          ans.innerHTML = `<div class="wq-notes"><p><i class="bub nt" aria-hidden="true"></i><span><b>উত্তর অধ্যায়ের নোটে</b>পূর্ণ নমুনা উত্তর আসার আগে এই প্রশ্নের, বা এর অংশবিশেষের, ধাপে ধাপে উত্তর পড়ুন:</span></p>
+            <ul>${notes[q.n].map(l => `<li><a href="${l.href}">${esc(l.label)}${l.part ? ` <small>(${l.part})</small>` : ""} <span aria-hidden="true">→</span></a></li>`).join("")}</ul></div>`;
+          return;
+        }
+        ans.innerHTML = ready ? `<p class="wq-wip"><i class="bub" aria-hidden="true"></i><span><b>উত্তর তৈরি হচ্ছে</b>এই প্রশ্নের নমুনা উত্তর এখনো লেখা হয়নি। প্রশ্নটি পড়ে নিজে একবার খাতায় লিখে রাখুন।</span></p>` : "";
+        return;
+      }
+      const part = tpl.content.cloneNode(true), side = part.querySelector("aside.side");
+      ans.appendChild(part.querySelector(".ans-body"));
+      fillIncludes(ans);
+      if (side) { side.classList.add("wq-side"); box.appendChild(side); }
+      $(".wq-q", box).insertAdjacentHTML("afterend", '<button class="btn line sm reveal" type="button">উত্তর দেখুন</button>');
+    });
+
+    setupHideAnswers($(".written"));
+    setupSectionBar(".wq");
+    if (section && document.getElementById(section)) scrollOnOpen(section);
+  }
+}
+
+
+/* ================= MOST-REPEATED WRITTEN QUESTIONS ================= */
+/* #/repeat[/<chapter>]: every question of the 16 written papers split into its separate asks and grouped by theme
+   (mcq/written-themes.js, loaded the first time this page opens), the theme asked in most exams first. Each theme
+   shows a bubble per exam (filled = asked that year), the asks themselves with links to their model answers, and the
+   note where the topic is taught. The chapter bubbles filter the list; the chapter is kept in the address. */
+const THEMES_SRC = "mcq/written-themes.js";
+function repeat(arg) {
+  if (!scriptReady(THEMES_SRC)) {
+    view.innerHTML = `<div class="wrap"><p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>প্রশ্নগুলো সাজানো হচ্ছে…</b></span></p></div>`;
+    const page = view.firstElementChild;
+    loadScript(THEMES_SRC).then(() => view.firstElementChild === page && repeat(arg), () => {
+      if (view.firstElementChild !== page) return;
+      page.innerHTML = `<p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>খোলা যায়নি</b>ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button></span></p>`;
+      $("[data-retry]", page).onclick = route;
+    });
+    return;
+  }
+  const W = D.written, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a)), exams = keys.map(k => parseInt(k));
+  const year = e => bn(W[`${e}-school`].year), { themes } = window.ICT_REPEAT.group(W);
+  const chs = allChapters().filter(c => themes.some(t => t.ch === c.id)), ch = chs.find(c => c.id === arg);
+  const list = ch ? themes.filter(t => t.ch === ch.id) : themes, asks = list.reduce((n, t) => n + t.items.length, 0);
+  const chNo = id => (chs.find(c => c.id === id) || {}).no;
+  document.title = `বারবার আসা লিখিত প্রশ্ন${ch ? ` · ${ch.name}` : ""} · ICT মাস্টার`;
+
+  const ask = i => `<li><p>${i.html}</p><p class="prev-m"><span class="xt">${ord(i.e)} · ${year(i.e)}</span><span>প্রশ্ন ${bn(i.n)}${i.o ? " · অথবা" : ""}${i.l ? ` ${i.l}` : ""}</span>` +
+    `<span>${marksTotal(i.m)} নম্বর</span><a href="#/written/${i.key}/q${i.n}">নমুনা উত্তর →</a></p></li>`;
+  const theme = (t, rank) => `
+    <li class="rp" id="${t.id}">
+      <span class="rp-no">${bn(rank)}</span>
+      <div class="rp-main">
+        <h2 class="rp-h">${esc(t.title)}</h2>
+        <p class="rp-n"><b>${bn(t.exams.length)}</b><span>/${bn(exams.length)}টি পরীক্ষায়</span>${ch ? "" : `<span class="xt">অধ্যায় ${bn(chNo(t.ch))}</span>`}</p>
+        <ol class="rp-row" aria-label="${bn(exams.length)}টির মধ্যে ${bn(t.exams.length)}টি পরীক্ষায় এসেছে">${exams.map(e => {
+          const on = t.exams.includes(e);
+          return `<li title="${ord(e)} · ${year(e)}${on ? "" : " · আসেনি"}"><i class="bub${on ? " on" : ""}" aria-label="${ord(e)}${on ? "" : ", আসেনি"}"></i><small>${bn(e)}</small></li>`;
+        }).join("")}</ol>
+        <details class="prev-more rp-q"><summary>পরীক্ষায় যেভাবে এসেছে <span>${bn(t.items.length)}টি প্রশ্ন</span></summary><ol class="prev">${t.items.map(ask).join("")}</ol></details>
+        <a class="rp-note" href="${t.note}">নোটে পড়ুন →</a>
+      </div>
+    </li>`;
+
+  view.innerHTML = `
+  <div class="wrap">
+    <article class="repeat">
+      <header class="doc-head">
+        <p class="crumb"><a href="#/">সূচি</a><i aria-hidden="true">/</i><a href="#/" data-home="written">লিখিত প্রশ্ন</a><i aria-hidden="true">/</i><span>বারবার আসা প্রশ্ন</span></p>
+        <h1>বারবার আসা লিখিত প্রশ্ন</h1>
+        <p class="doc-lede">৩য় থেকে ১৮তম, ${bn(exams.length)}টি পরীক্ষার প্রতিটি প্রশ্ন ভেঙে বিষয় ধরে সাজানো। যে বিষয় যত বেশি পরীক্ষায় এসেছে, সে তত ওপরে; প্রতিটির নিচে প্রশ্নগুলো, নমুনা উত্তর আর নোটের লিংক।</p>
+        <p class="doc-meta"><span>বিষয় <b>${bn(list.length)}</b></span><span>প্রশ্নাংশ <b>${bn(asks)}</b></span><span>পরীক্ষা <b>${bn(exams.length)}</b></span></p>
+      </header>
+      <div class="pick rp-pick" role="radiogroup" aria-label="অধ্যায় বেছে নিন">
+        <label title="সব অধ্যায়"><input type="radio" name="rpch" value=""${ch ? "" : " checked"}><span class="bub">সব</span></label>
+        ${chs.map(c => `<label title="অধ্যায় ${bn(c.no)} · ${esc(c.name)}"><input type="radio" name="rpch" value="${c.id}"${ch === c ? " checked" : ""}><span class="bub">${bn(c.no)}</span></label>`).join("")}
+      </div>
+      <p class="rp-cap">${ch ? `অধ্যায় ${bn(ch.no)} · ${esc(ch.name)}` : "সব অধ্যায়"}<span>প্রতিটি বৃত্ত একটি পরীক্ষা, বাঁ থেকে ১৮তম থেকে ৩য়; ভরাট মানে সে বছর এসেছে</span></p>
+      <ol class="rp-list">${list.map((t, i) => theme(t, i + 1)).join("")}</ol>
+    </article>
+  </div>`;
+  $$('[name="rpch"]').forEach(r => r.onchange = () => { location.hash = r.value ? `#/repeat/${r.value}` : "#/repeat"; });
 }
 
 
@@ -1307,7 +1404,7 @@ function result() {
 
 
 /* ================= ROUTER ================= */
-const ROUTES = { "": home, mcq, note, written, setup, exam: examView, result };
+const ROUTES = { "": home, mcq, note, written, repeat, setup, exam: examView, result };
 function route() {
   if (document.documentElement.classList.contains("locked")) return;   // nothing is drawn behind the password screen
   const [name = "", arg, sub] = location.hash.replace(/^#\/?/, "").split("/");
@@ -1316,7 +1413,7 @@ function route() {
   document.body.dataset.screen = screen || "home";
   ROUTES[screen](arg && decodeURIComponent(arg), sub);
   // Top links (computers, tablets) and the bottom tab bar (phones) mark the same section. A note belongs to সূচি.
-  const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", setup: "setup", exam: "setup", result: "setup" }[screen];
+  const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", repeat: "mcq", setup: "setup", exam: "setup", result: "setup" }[screen];
   $$(".nav a, .tabbar a").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === section));
   if (!sub) window.scrollTo(0, 0);
   // Floating shortcuts: home everywhere but home; lifted over the exam form's sticky summary.
