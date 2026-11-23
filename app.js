@@ -237,7 +237,7 @@ function noteAnswers(key, n) {
   if (!P) return [];
   return P.items.filter(x => x.e === e && x.n === n && x.ans && x.ans.startsWith("#/note/") && !seen.has(x.ans) && seen.add(x.ans)).map(x => {
     const ch = allChapters().find(c => c.id === x.c);
-    return { href: x.ans, label: ch ? `অধ্যায় ${bn(ch.no)} · ${ch.name}` : "অধ্যায়ের নোট", part: [x.o ? "অথবা" : "", x.l || ""].filter(Boolean).join(" ") };
+    return { href: x.ans, label: ch ? `অধ্যায় ${bn(ch.no)} · ${ch.name}` : "অধ্যায়ের নোট", part: [x.o || x.alt ? "অথবা" : "", x.l || ""].filter(Boolean).join(" ") };
   });
 }
 
@@ -311,7 +311,7 @@ function note(id, section) {
    - every [data-prev="<topic>"] list: the questions themselves, newest first, with the exam, marks and "অথবা". */
 /* An item that points into a paper (n, o, l) gets its text, marks and model-answer link from that paper. */
 function prevItem(x) {
-  if (!x.n) return x;
+  if (!x.n || x.q) return x;   // chapter ১'s items carry their own text; their n only places them in the paper
   const key = `${x.e}-school`, p = D.written[key], q = p && p.questions.find(y => y.n === x.n);
   if (!q) return null;
   const src = x.o ? wAlts(q)[x.o - 1] : (q.parts || q.q);
