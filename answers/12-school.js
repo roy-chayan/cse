@@ -473,7 +473,7 @@ if (a &gt; b) a = a - b; /* তুলনা, তারপর মান বসা
     <h3 class="part-h"><span>(11001)<sub>2</sub> ÷ (101)<sub>2</sub>; (203.25)<sub>8</sub> থেকে হেক্সাডেসিমাল</span><i class="bub mk">৫</i></h3>
     <h4 class="sub-h"><span>১</span>বাইনারি ভাগ</h4>
     <p class="prose">দশমিকের মতো লম্বা ভাগ: ভাজ্যের বাঁ থেকে যতটুকু নিলে ভাজক 101 বসে, ততটুকু নিই; বসলে ভাগফলে 1, না বসলে 0।</p>
-    <table class="truth trace">
+    <table class="truth cols">
       <thead><tr><th>ধাপ</th><th>নেওয়া অংশ</th><th>101 বসে?</th><th>ভাগফলে</th><th>বাকি</th></tr></thead>
       <tbody><tr><td>১</td><td>110</td><td>হ্যাঁ</td><td>1</td><td>110 − 101 = 1</td></tr><tr><td>২</td><td>10 (পরের 0 নামিয়ে)</td><td>না</td><td>0</td><td>10</td></tr><tr><td>৩</td><td>101 (পরের 1 নামিয়ে)</td><td>হ্যাঁ</td><td>1</td><td>0</td></tr></tbody>
     </table>

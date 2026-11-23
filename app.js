@@ -188,9 +188,9 @@ function home() {
   const half = Math.ceil(list.length / 2);
   $("#toc").innerHTML = list.length ? `<ol>${list.slice(0, half).map(row).join("")}</ol><ol start="${half + 1}">${list.slice(half).map(row).join("")}</ol>` : "";
 
-  // Written papers (school level only), newest first, as a register in two columns like the contents above: papers
-  // with model answers on the left, the rest on the right. Each row is one link with a bubble per question, filled
-  // when its full model answer is written, half-filled when a chapter note answers it (written-prev.js), else empty.
+  // Written papers (school level only), newest first, as a register in two columns like the contents above. Each row
+  // is one link: the exam and year, the subject and number of questions, and "পড়ুন". Only a paper that still lacks
+  // model answers says so in place of "পড়ুন" (how many are written, or answered in a chapter note via written-prev.js).
   const W = D.written || {}, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a));
   const papers = keys.map(k => {
     const w = W[k], st = w.questions.map(q => writtenAnswer(k, q.n) ? 2 : noteAnswers(k, q.n).length ? 1 : 0);
@@ -198,20 +198,20 @@ function home() {
   });
   const done = papers.filter(p => p.full), rest = papers.filter(p => !p.full), sum = (g, f) => g.reduce((t, p) => t + p[f], 0);
   const span = g => g.length > 1 ? `${ord(parseInt(g[g.length - 1].k))}–${ord(parseInt(g[0].k))}` : g.length ? ord(parseInt(g[0].k)) : "";
-  const state = p => p.full ? (p.full === p.n ? "সব উত্তর" : `${bn(p.full)}/${bn(p.n)} উত্তর`) : p.note ? `${bn(p.note)}/${bn(p.n)} নোটে` : "শুধু প্রশ্ন";
+  const state = p => p.full ? (p.full === p.n ? "পড়ুন" : `${bn(p.full)}/${bn(p.n)} উত্তর`) : p.note ? `${bn(p.note)}/${bn(p.n)} নোটে` : "শুধু প্রশ্ন";
   const paperRow = p => `<li><a class="wr" href="#/written/${p.k}">
       <span class="wr-no">${ord(parseInt(p.k))}<small>${bn(p.w.year)}</small></span>
-      <span class="wr-body"><span class="wr-dots" aria-hidden="true">${p.st.map(s => `<i class="dot${s === 2 ? " full" : s === 1 ? " half" : ""}"></i>`).join("")}</span>
-        <span class="wr-sub">${esc(p.w.subject)} · ${bn(p.n)}টি প্রশ্ন</span></span>
-      <span class="wr-st${p.full ? " ok" : ""}">${state(p)}</span></a></li>`;
+      <span class="wr-sub"><span class="wr-subj">${esc(p.w.subject)} · </span>${bn(p.n)}টি প্রশ্ন</span>
+      <span class="wr-st">${state(p)}</span></a></li>`;
   const col = (g, title, sub) => g.length ? `<section class="wr-col"><h3 class="wr-h">${title}<small>${span(g)} · ${sub}</small></h3><ol>${g.map(paperRow).join("")}</ol></section>` : "";
   const qn = sum(papers, "n"), fulls = sum(papers, "full"), notes = sum(rest, "note");
   $("#wLedeHome").textContent = `স্কুল পর্যায়ের সহকারী শিক্ষক (কম্পিউটার / আইসিটি) পদের ${bn(papers.length)}টি লিখিত প্রশ্নপত্র, মূল প্রশ্নপত্রের ক্রমে। ` +
-    `${bn(qn)}টি প্রশ্নের ${bn(fulls)}টির পূর্ণ নমুনা উত্তর আছে${notes ? `, আরও ${bn(notes)}টির উত্তর অধ্যায়ের নোটে` : ""}।`;
-  $("#wreg").innerHTML = `<div class="wr-cols">` +
-    col(done, "নমুনা উত্তরসহ", "প্রতিটি প্রশ্নের পূর্ণ উত্তর, নম্বর বণ্টন মেনে") +
-    col(rest, "প্রশ্ন, উত্তর অধ্যায়ের নোটে", "প্রতিটি প্রশ্নের নিচে নোটের লিংক") + `</div>
-    <p class="toc-key"><span><i class="dot full"></i>পূর্ণ নমুনা উত্তর</span><span><i class="dot half"></i>অধ্যায়ের নোটে উত্তর</span><span><i class="dot"></i>এখনো নেই</span><span>প্রতিটি বৃত্ত একটি প্রশ্ন</span></p>`;
+    (fulls === qn ? `${bn(qn)}টি প্রশ্নের প্রতিটির পূর্ণ নমুনা উত্তর আছে।` : `${bn(qn)}টি প্রশ্নের ${bn(fulls)}টির পূর্ণ নমুনা উত্তর আছে${notes ? `, আরও ${bn(notes)}টির উত্তর অধ্যায়ের নোটে` : ""}।`);
+  // Once every paper has its answers, the two columns are simply the newer and the older half.
+  const newer = Math.ceil(done.length / 2), all = "প্রতিটি প্রশ্নের পূর্ণ উত্তর, নম্বর বণ্টন মেনে";
+  const cols = rest.length ? col(done, "নমুনা উত্তরসহ", all) + col(rest, "প্রশ্ন, উত্তর অধ্যায়ের নোটে", "প্রতিটি প্রশ্নের নিচে নোটের লিংক")
+    : col(done.slice(0, newer), "সাম্প্রতিক প্রশ্নপত্র", all) + col(done.slice(newer), "পুরোনো প্রশ্নপত্র", all);
+  $("#wreg").innerHTML = `<div class="wr-cols">${cols}</div>`;
 }
 
 /* A note's two ways on to practice, "read the chapter's MCQs" and "take a timed exam on it": under the title so they
@@ -311,15 +311,17 @@ function note(id, section) {
    - every [data-prev="<topic>"] list: the questions themselves, newest first, with the exam, marks and "অথবা". */
 /* An item that points into a paper (n, o, l) gets its text, marks and model-answer link from that paper. */
 function prevItem(x) {
-  if (!x.n || x.q) return x;   // chapter ১'s items carry their own text; their n only places them in the paper
-  const key = `${x.e}-school`, p = D.written[key], q = p && p.questions.find(y => y.n === x.n);
+  if (!x.n) return x;
+  const key = `${x.e}-school`, ans = writtenAnswer(key, x.n) ? `#/written/${key}/q${x.n}` : x.ans;
+  if (x.q) return { ...x, ans };   // chapter ১'s items carry their own text; their n only places them in the paper
+  const p = D.written[key], q = p && p.questions.find(y => y.n === x.n);
   if (!q) return null;
   const src = x.o ? wAlts(q)[x.o - 1] : (q.parts || q.q);
   if (!src) return null;
   const parts = typeof src === "string" ? null : x.l ? src.filter(pt => pt.l === x.l) : src;
   const text = parts ? parts.map(pt => (x.l ? "" : `${pt.l}. `) + pt.q).join(" ") : src;
   const m = parts && x.l && parts[0] && parts[0].m ? parts[0].m : marksTotal(q.marks);
-  return { ...x, q: text, m, alt: x.o ? 1 : 0, ans: writtenAnswer(key, x.n) ? `#/written/${key}/q${x.n}` : x.ans };
+  return { ...x, q: text, m, alt: x.o ? 1 : 0, ans };
 }
 
 function renderPrev(chId) {

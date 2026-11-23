@@ -6,8 +6,10 @@
 //   - every past written question (mcq/written-prev.js): its paper, question, অথবা and part exist
 //   - every answer link (ans): a note link lands on a real section id; a written link names a real paper
 //   - every #/note/… link in index.html and answers/*.js lands on a real section
+//   - every reused answer part (data-include) names an answer and a part that exist
 import fs from "node:fs";
 import vm from "node:vm";
+import { allAnswers, includeProblems } from "./answers/lib.mjs";
 
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 const window = {}, ctx = { window };
@@ -83,6 +85,11 @@ for (const [file, text] of linkSources)
     else if (!noteIds[m[1]].has(m[2])) say(`${file}: link #/note/${m[1]}/${m[2]}, but that note has no such section`);
   }
 
-console.log(`${chapters.length} chapters · ${mcqs} MCQs · ${Object.keys(notes).length} notes · ${P.items.length} past written questions · ${Object.keys(W).length} papers`);
+// ---- every reused answer part (data-include) exists ----
+const ANS = allAnswers();
+includeProblems(ANS).forEach(say);
+const modelAnswers = Object.values(ANS).reduce((t, qs) => t + Object.keys(qs).length, 0);
+
+console.log(`${chapters.length} chapters · ${mcqs} MCQs · ${Object.keys(notes).length} notes · ${P.items.length} past written questions · ${Object.keys(W).length} papers · ${modelAnswers} model answers`);
 console.log(problems.length ? `\n${problems.length} problem(s):\n- ` + problems.join("\n- ") : "No problems found.");
 process.exit(problems.length ? 1 : 0);

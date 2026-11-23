@@ -6,41 +6,9 @@
 //   - earlier papers' answers to the same question, reused in the page with data-include (fillIncludes in app.js)
 //   - new writing where nothing existed yet (below)
 // Every number written here is computed.
-import fs from "node:fs";
+import { notes, ok, bn, part, include, reuse, inc, OR, side, answer, writeAnswers } from "./lib.mjs";
 
-const root = new URL("../../", import.meta.url), read = f => fs.readFileSync(new URL(f, root), "utf8");
-const html = read("index.html");
-const ok = (c, m) => { if (!c) throw new Error("check failed: " + m); };
-const BN = "০১২৩৪৫৬৭৮৯", bn = s => String(s).replace(/\d/g, d => BN[d]);
-const template = id => { const a = html.indexOf(`<template id="${id}">`); ok(a >= 0, id); return html.slice(a, html.indexOf("</template>", a)); };
-
-// A worked block from a note: everything after a heading up to the next h4/h3 (the heading itself is dropped, the
-// answer gives its own). Ids inside get a suffix so they can't clash with anything else on the paper page.
-const cut = (t, start) => {
-  const ends = ["<h4", "<h3"].map(s => t.indexOf(s, start)).filter(i => i > 0);
-  return t.slice(start, Math.min(...ends)).trim();
-};
-const afterTag = (t, i, tag) => t.indexOf(`</${tag}>`, i) + tag.length + 3;
-const fromH4 = (tpl, id) => { const t = template(tpl), i = t.indexOf(`id="${id}"`); ok(i > 0, id); return tidy(cut(t, afterTag(t, i, "h4")), id); };
-const fromH3 = (tpl, title) => { const t = template(tpl), i = t.indexOf(`</span>${title}</h3>`); ok(i > 0, title); return tidy(cut(t, afterTag(t, i, "h3")), title); };
-const tidy = (s, what) => {
-  for (const tag of ["div", "figure", "table", "ol", "ul", "p", "svg"]) ok((s.match(new RegExp(`<${tag}[\\s>]`, "g")) || []).length === (s.match(new RegExp(`</${tag}>`, "g")) || []).length, `${what}: <${tag}> balanced`);
-  ok(!/data-prev|data-practice|<section/.test(s), `${what}: only answer content`);
-  // a note refers to its own parts by number; on a paper page those words need the note's name or a link instead
-  for (const [from, to] of [[">অংশ ২-এ</a>", ">অধ্যায় ২-এর নোটে</a>"],
-    ["(অংশ ৭.৬-এর মতো)", '(যেমন <a href="#/note/algorithm-flowchart/p-minN">N টি সংখ্যার মধ্যে ছোট</a> নির্ণয়ে)']]) s = s.split(from).join(to);
-  return s.replace(/ id="([^"]+)"/g, ' id="$1-wa10"').replace(/url\(#([^)]+)\)/g, "url(#$1-wa10)")
-    .split("\n").map(l => l.replace(/^ {8}/, "    ")).join("\n");
-};
-
-const part = (title, marks, body, suggested) =>
-  `  <section class="part">\n    <h3 class="part-h"><span>${title}</span><i class="bub mk"${suggested ? ' title="প্রস্তাবিত নম্বর"' : ""}>${marks}</i></h3>\n${body}\n  </section>`;
-const include = (paper, n, k, inner = true) => `    <div data-include="wa-${paper}-${n}" data-part="${k}"${inner ? " data-inner" : ""}></div>`;
-const reuse = (paper, n, k) => `  <div data-include="wa-${paper}-${n}" data-part="${k}"></div>`;   // a whole earlier part, its own heading and marks
-const inc = s => `    <p class="inc-note">${s}</p>`;
-const OR = `\n  <p class="ans-or">অথবা</p>\n`;
-const side = (items, chapters) => `<aside class="side">\n${items.map(([b, s]) => `  <p><b>${b}</b>${s}</p>`).join("\n")}\n  <p class="tags">${chapters.map(c => `<span class="xt">অধ্যায়: ${c}</span>`).join("")}</p>\n</aside>`;
-const answer = (body, aside) => `\n<div class="ans-body">\n${body}\n</div>\n${aside}\n`;
+const { fromH4, fromH3 } = notes("wa10");
 
 // ---------------- new writing ----------------
 const bcdRows = [...Array(10).keys()].map(d => `        <tr><td>${bn(d)}</td><td class="m">${d.toString(2).padStart(4, "0")}</td></tr>`).join("\n");
@@ -199,13 +167,4 @@ A[10] = answer([
   ["বিস্তারিত নোট", `<a href="#/note/logic-gates/gates">অধ্যায় ৪ · মৌলিক গেট</a>, <a href="#/note/number-system/bridge">অধ্যায় ২ · বাইনারি সেতু</a>`]], ["লজিক সার্কিট ও লজিক গেট", "সংখ্যা পদ্ধতি"]));
 
 // ---------------- write ----------------
-const esc = s => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-const out = `/* Model answers · ১০ম শিক্ষক নিবন্ধন (২০১৪), সহকারী শিক্ষক (কম্পিউটার), বিষয় কোড ৩১৩.
-   Built by tools/answers/build-10-school.mjs: worked blocks come from the chapter notes, repeated questions reuse earlier
-   answers (data-include), the rest is written there. Edit that script and rebuild, not this file. */
-(window.ICT_ANSWERS = window.ICT_ANSWERS || {})["10-school"] = {
-${Object.entries(A).map(([n, h]) => `\n${n}: \`${esc(h)}\``).join(",\n")}
-};
-`;
-fs.writeFileSync(new URL("answers/10-school.js", root), out);
-console.log("answers/10-school.js:", Object.keys(A).length, "questions,", out.length, "characters");
+writeAnswers("10-school", A, "১০ম শিক্ষক নিবন্ধন (২০১৪)", "build-10-school.mjs");

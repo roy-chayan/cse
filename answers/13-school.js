@@ -218,7 +218,7 @@
       <code class="add">+ 177.F8</code><span>(567.76)<sub>8</sub></span>
       <code class="res"> 1114.CB</code><span>যোগফল</span>
     </div>
-    <table class="truth trace">
+    <table class="truth cols">
       <thead><tr><th>ঘর</th><th>যোগ</th><th>বসে</th><th>হাতে</th></tr></thead>
       <tbody><tr><td>ডানের ভগ্নাংশ</td><td>3 + 8 = ১১</td><td>B</td><td>০</td></tr><tr><td>বাঁয়ের ভগ্নাংশ</td><td>D + F = ১৩ + ১৫ = ২৮ = ১৬ + ১২</td><td>C</td><td>১</td></tr><tr><td>একক</td><td>C + 7 + ১ = ১২ + ৭ + ১ = ২০ = ১৬ + ৪</td><td>4</td><td>১</td></tr><tr><td>ষোলো</td><td>9 + 7 + ১ = ১৭ = ১৬ + ১</td><td>1</td><td>১</td></tr><tr><td>২৫৬</td><td>F + 1 + ১ = ১৭ = ১৬ + ১</td><td>1</td><td>১</td></tr><tr><td>শেষ</td><td>হাতের ১</td><td>1</td><td>–</td></tr></tbody>
     </table>

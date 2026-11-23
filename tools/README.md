@@ -14,8 +14,25 @@ Run this after adding MCQs, past questions or links. It changes nothing, it only
 - every chapter note's practice sets name real MCQs, and every MCQ of the chapter is in some set
 - every past written question in `mcq/written-prev.js` points to a real paper, question, অথবা and part
 - every answer link (`ans`) lands on a real note section or written paper
+- every part of an earlier answer that a model answer reuses (`data-include`) exists
 
 It ends with "No problems found." or a list of what to fix.
+
+## answers/build-NN-school.mjs: model answers for the older papers
+
+```
+node tools/answers/build-9-school.mjs
+```
+
+Each script writes one file, `answers/<no>-school.js`, so edit the script and rebuild rather than the output. Worked blocks (calculations, circuits, flowcharts) are copied from the chapter notes in `index.html` when the script runs, so rerun it after changing one of those blocks. A question that an earlier paper already asked reuses that answer instead of repeating it. Every number is checked against a computation before the file is written, and the build stops with "check failed" if a check or a reused part doesn't match. `answers/lib.mjs` holds the shared pieces (`ok`, `bn`, `part`, `include`, `side`, `writeAnswers` and so on). When only a piece of an earlier answer fits (a reuse always brings the whole part), `fromAnswer` copies just that piece at build time, as the ৮ম script does for the dot-matrix printer. `seriesSum` runs a series such as 1 + 2 + … + 50 and draws its flowchart and trace table from the same run. `sopCircuit` draws a sum-of-products circuit exactly as printed (used where a paper's overbars didn't print), and `fromSection` lifts a whole note sub-section, smaller headings included.
+
+Every paper from ৩য় to ১৮তম now has full model answers (১৮তম's are templates in `index.html`; ১১তম–১৭তম were written by hand in `answers/`; ৩য়–১০ম come from these scripts). After changing a note block that a script lifts, rerun the scripts for ৩য়–১০ম and then `node tools/check-site.mjs`.
+
+To find an earlier answer to reuse, list every part of every model answer, optionally filtered by words:
+
+```
+node tools/answer-index.mjs ফ্লোচার্ট
+```
 
 ## mcq/gen-chNN-mcq.mjs: how the site's own MCQs were made
 
