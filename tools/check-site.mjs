@@ -9,10 +9,12 @@
 //   - every #/note/… link in index.html, notes/*.js, answers/*.js and mcq/written-themes.js lands on a real section
 //   - every ask of every written paper falls into a theme of the most-repeated page (mcq/written-themes.js)
 //   - every reused answer part (data-include) names an answer and a part that exist
+//   - every sound file app.js names (sounds/…) exists, and each sounds/<name>.js matches its sound file
 //   - answers/index.js and the per-paper bundles in answers/paper/ match the answer files
 import fs from "node:fs";
 import vm from "node:vm";
 import { allAnswers, includeProblems, siteAnswers, noteHtml } from "./answers/lib.mjs";
+import { soundScripts } from "./sounds.mjs";
 
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 const window = {}, ctx = { window };
@@ -88,6 +90,11 @@ for (const [file, text] of linkSources)
     if (!noteIds[m[1]]) say(`${file}: link to unknown note "${m[1]}"`);
     else if (!noteIds[m[1]].has(m[2])) say(`${file}: link #/note/${m[1]}/${m[2]}, but that note has no such section`);
   }
+
+// ---- files app.js loads by name: the rapid-fire sound, and each sound's script matches its sound file ----
+for (const m of app.matchAll(/"(sounds\/[\w.-]+)"/g)) if (!fs.existsSync(new URL("../" + m[1], import.meta.url))) say(`app.js: ${m[1]} is missing`);
+for (const [name, text] of Object.entries(soundScripts()))
+  if (!fs.existsSync(new URL("../sounds/" + name, import.meta.url)) || read("sounds/" + name) !== text) say(`sounds/${name} doesn't match its sound file; run node tools/sounds.mjs`);
 
 // ---- the most-repeated page: every ask of every paper lands in a theme ----
 {

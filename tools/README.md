@@ -19,6 +19,7 @@ Run this after adding MCQs, past questions or links. It changes nothing, it only
 - every past written question in `mcq/written-prev.js` points to a real paper, question, অথবা and part
 - every answer link (`ans`) lands on a real note section or written paper
 - every part of an earlier answer that a model answer reuses (`data-include`) exists
+- every sound file `app.js` names (`sounds/…`) exists, and each `sounds/<name>.js` matches its sound file
 - every ask of every written paper falls into a theme of the "বারবার আসা প্রশ্ন" page (`mcq/written-themes.js`), and each theme's note link works
 
 It ends with "No problems found." or a list of what to fix.
@@ -60,6 +61,14 @@ node tools/mcq/gen-ch05-mcq.mjs mcq/ch05.js --check
 The scripts for chapters ৬ and ৭, and the ones that wrote the chapter ৫–৭ notes, were lost before this folder existed. Those notes are now edited directly in `notes/chNN.js`.
 
 `mcq/batch-2026-11-24.mjs` added a second batch, 134 questions across all seven chapters, aimed at the note sections with the fewest MCQs. It works the same way (`--check` to verify), and also appends each new range to its note section's practice set in `notes/chNN.js`. Trace questions (`code:`) are answered by running the same steps in the script, so a wrong option can't slip in. `--dry` runs every check and lists questions that look like ones already in the chapter, without writing anything; read that list before adding a batch, since the same fact asked in other words is the usual mistake.
+
+## sounds.mjs: the rapid-fire sound
+
+```
+node tools/sounds.mjs
+```
+
+The time-up sound in rapid fire is a recording, `sounds/answer-reveal.mp3`. The site doesn't load the `.mp3` itself: a page opened straight from the disk (`index.html`, `file://`) isn't allowed to fetch files, so this script writes the sound as text into `sounds/answer-reveal.js`, which the site loads like its other data. To use a different sound, replace `sounds/answer-reveal.mp3` (keep the name) and run this. `check-site.mjs` reports a script that no longer matches its sound file.
 
 ## shot.mjs: look at a page
 

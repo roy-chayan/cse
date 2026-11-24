@@ -135,7 +135,7 @@
     <header class="sec-h"><span class="sec-no">২</span><h2>লিখিত প্রশ্ন ও উত্তর</h2>
       <p id="wLedeHome">স্কুল পর্যায়ের সহকারী শিক্ষক (কম্পিউটার / আইসিটি) পদের বিগত লিখিত প্রশ্ন, মূল প্রশ্নপত্রের ক্রমে; নমুনা উত্তর একে একে যোগ হচ্ছে।</p></header>
     <div class="wreg" id="wreg"></div>
-    <p class="wr-more"><a class="btn line" href="#/repeat">কোন প্রশ্ন বারবার আসে, বিষয় ধরে <span aria-hidden="true">→</span></a></p>
+    <p class="wr-more"><a class="btn line" href="#/repeat">কোন প্রশ্ন বারবার আসে, বিষয় ধরে <span aria-hidden="true">→</span></a><a class="btn line" href="#/wtest">সময় ধরে লিখুন <span aria-hidden="true">→</span></a></p>
   </section>
 
   <section class="cta" aria-labelledby="cta-h">
@@ -185,6 +185,12 @@
     <ol class="opts quick-opts" id="quickList"></ol>
     <!-- Remembered in this browser; the same switch is under every question during an exam (app.js, auto-next). -->
     <label class="switch autonext"><input type="checkbox" data-autonext><span class="track" aria-hidden="true"></span><span>উত্তর দিলেই পরের প্রশ্নে যান</span></label>
+  </section>
+
+  <!-- The written paper against the clock (app.js, timed written practice). app.js fills the line under the title. -->
+  <section class="quick wquick" aria-labelledby="wquick-h">
+    <h2 class="quick-h" id="wquick-h">লিখিত পরীক্ষা</h2>
+    <ol class="opts quick-opts"><li><a class="opt quick-opt" href="#/wtest" id="wQuick"><i class="bub">ক</i><span class="otext"><b>সময় ধরে লিখুন</b><small>প্রশ্নপত্র বা কয়েকটি প্রশ্ন বেছে ঘড়ি চালু করুন; শেষে নমুনা উত্তরের সঙ্গে মিলিয়ে নিজেই নম্বর দিন</small></span><span class="go" aria-hidden="true">→</span></a></li></ol>
   </section>
 
   <details class="custom" id="custom">
