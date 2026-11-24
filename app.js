@@ -1339,32 +1339,15 @@ let rf = null, rfTimer = 0, rfNext = 0;
 const rfPool = chapters => QS.filter(q => inExam(q) && !q.code && !q.wave && !/<svg/.test(q.q) && chapters.includes(q.c));
 const rfSound = () => store.get("rf_sound", true) !== false;
 
-/* The sounds. Most are made in the browser (Web Audio); the time-up one is a recording, sounds/answer-reveal.mp3
-   (downloaded on 2026-11-24 as dragon-studio-correct-472358.mp3, a Pixabay-style name; 1.3 s, recorded at full level).
-   The site loads it as a script, sounds/answer-reveal.js (made by tools/sounds.mjs), because a page opened straight from
-   the disk may load scripts but not fetch files. It loads the first time a sound is allowed and plays through the same
-   Web Audio. A phone only allows sound after a tap, so the start button calls unlock(). */
-const REVEAL_SRC = "sounds/answer-reveal.js", REVEAL_VOL = 0.4;   // the recording is at full level; 0.4 sits with the rest
+/* The sounds, made in the browser (Web Audio), so there are no sound files. A phone only allows sound after a tap,
+   so the start button calls unlock(). The same sounds as the exam site's rapid fire. */
 const SOUND = (() => {
-  let ctx = null, reveal = null, loading = false;
+  let ctx = null;
   const get = () => {
     try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === "suspended") ctx.resume(); }
     catch (e) { ctx = null; }
     return ctx;
   };
-  // The time-up recording, once. If it can't be had (no connection) the bell below plays instead, and the next tap
-  // tries again.
-  const load = c => {
-    if (reveal || loading || !c) return;
-    loading = true;
-    loadScript(REVEAL_SRC).then(() => {
-      const s = (window.ICT_SOUNDS || {})["answer-reveal"];
-      if (!s) throw new Error(REVEAL_SRC);
-      const bytes = Uint8Array.from(atob(s.data), ch => ch.charCodeAt(0));
-      return new Promise((ok, no) => c.decodeAudioData(bytes.buffer, ok, no));
-    }).then(buf => (reveal = buf), () => {}).finally(() => (loading = false));
-  };
-  const unlock = () => { const c = get(); load(c); return c; };
   const tone = (freq, at, dur, type = "sine", vol = 0.2) => {
     const c = get(); if (!c) return;
     const t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
@@ -1375,25 +1358,18 @@ const SOUND = (() => {
     o.connect(g); g.connect(c.destination);
     o.start(t); o.stop(t + dur + 0.03);
   };
-  const file = (buf, vol) => {
-    const c = get(); if (!c) return;
-    const s = c.createBufferSource(), g = c.createGain();
-    s.buffer = buf; g.gain.value = vol;
-    s.connect(g); g.connect(c.destination); s.start();
-  };
-  // The fallback for the time-up sound: one strike of an exam-hall bell (a main note plus fainter, higher tones that
-  // aren't whole multiples of it and die away faster).
-  const bell = () => [[1, 0.2, 1.8], [2.76, 0.09, 1.0], [5.4, 0.045, 0.5], [8.93, 0.025, 0.3]]
-    .forEach(([k, vol, dur]) => tone(880 * k, 0, dur, "sine", vol));
+  // One soft chime note: a sine with a faint octave above it, both dying away quickly (like a small marimba).
+  const chime = (freq, at) => { tone(freq, at, 0.5, "sine", 0.11); tone(freq * 2, at, 0.25, "sine", 0.025); };
   const play = f => () => { if (rfSound()) f(); };
   return {
-    unlock,
+    unlock: get,
     tick: play(() => tone(1050, 0, 0.05, "square", 0.05)),                                    // each second
     last: play(() => { tone(1568, 0, 0.16, "square", 0.08); tone(1568, 0.2, 0.16, "square", 0.08); }),   // the last second
-    out: play(() => (reveal ? file(reveal, REVEAL_VOL) : bell())),                            // time up: the answer fills in
+    // Time up, the answer fills in: two soft chime notes going down (going up is the "right" sound), a little quieter
+    // than the others. The downloaded recording used before (2026-11-24) was about twice as loud.
+    out: play(() => { chime(1319, 0); chime(988, 0.14); }),
     right: play(() => { tone(659, 0, 0.12, "sine", 0.22); tone(988, 0.1, 0.26, "sine", 0.22); }),
-    wrong: play(() => tone(155, 0, 0.34, "sawtooth", 0.09)),
-    ready: () => !!reveal                                                                      // for the checks
+    wrong: play(() => tone(155, 0, 0.34, "sawtooth", 0.09))
   };
 })();
 
