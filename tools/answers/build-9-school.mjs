@@ -2,7 +2,7 @@
 //   node tools/answers/build-9-school.mjs
 // Three sources, so nothing is written twice (see lib.mjs):
 //   - worked blocks already in the chapter notes (the 0–16 table, the binary sums, the circuit, the hex conversion,
-//     the HTML section, the topology drawing), copied from index.html at build time; rerun this after changing them
+//     the HTML section, the topology drawing), copied from the chapter notes (notes/chNN.js) at build time; rerun this after changing them
 //   - earlier papers' answers to the same question, reused with data-include
 //   - new writing where nothing existed yet (below)
 // Every number written here is computed or checked against a computation.

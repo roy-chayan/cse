@@ -1,8 +1,8 @@
 /* ICT মাস্টার — site data other than the chapter MCQs (those are in mcq/*.js).
-   written: written papers; the question text is from the real paper, the model answers are templates in index.html. */
+   written: written papers; the question text is from the real paper, the model answers are in answers/ (see app.js). */
 window.KHATA_DEMO = {
   /* Written (descriptive) papers. The question text is from the real paper; the model answers live in
-     index.html as <template id="wa-<paper>-<n>"> (only some are written in the demo).
+     answers/<paper>.js (every paper has them now).
      marks: as printed; split: how the marks are divided between the parts of the answer. */
   written: {
     "18-school": {

@@ -243,23 +243,30 @@ function noteAnswers(key, n) {
 
 
 /* ================= NOTE ================= */
-/* Each chapter's note is a template in index.html; this table says which. */
+/* Each chapter's note is notes/<chapter>.js, which puts the note's HTML in window.ICT_NOTES. A note's file loads the
+   first time it opens (the notes are most of the site, so a visit that reads one note fetches only that one). */
 const NOTES = {
-  "computer-basics": { tpl: "t-note-ch01", ch: "ch01" },
-  "number-system": { tpl: "t-note", ch: "ch02" },
-  "data-representation": { tpl: "t-note-ch03", ch: "ch03" },
-  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" },
-  "operating-system": { tpl: "t-note-ch05", ch: "ch05" },
-  "algorithm-flowchart": { tpl: "t-note-ch06", ch: "ch06" },
-  "internet": { tpl: "t-note-ch07", ch: "ch07" }
+  "computer-basics": { ch: "ch01" },
+  "number-system": { ch: "ch02" },
+  "data-representation": { ch: "ch03" },
+  "logic-gates": { ch: "ch04" },
+  "operating-system": { ch: "ch05" },
+  "algorithm-flowchart": { ch: "ch06" },
+  "internet": { ch: "ch07" }
 };
+const noteTpls = new Map();   // the parsed note, kept for the next visit to it
+function mountNote(chId) {
+  if (!noteTpls.has(chId)) { const t = document.createElement("template"); t.innerHTML = window.ICT_NOTES[chId]; noteTpls.set(chId, t); }
+  view.replaceChildren(noteTpls.get(chId).content.cloneNode(true));
+}
 
 function note(id, section) {
   const key = NOTES[id] ? id : "number-system", n = NOTES[key];
   // A chapter can have its note before its MCQs; its name then comes from the chapter list.
   const ch = chapterOf(n.ch) || (window.ICT_CHAPTERS || []).find(c => c.id === n.ch) || { name: "নোট" };
-  mount(n.tpl);
   document.title = `${ch.name} · ICT মাস্টার`;
+  if (!needScript(`notes/${n.ch}.js`, "নোট আনা হচ্ছে…", () => note(id, section))) return;
+  mountNote(n.ch);
 
   // 0–15 in all four forms (number-system note).
   if ($("#g16")) $("#g16").innerHTML = Array.from({ length: 16 }, (_, k) =>
@@ -656,6 +663,21 @@ function loadScript(src) {
   }));
   return scripts.get(src);
 }
+/* For a page that can't draw without its script: true when the script is here. Otherwise it shows a "loading" line,
+   loads the script and draws the page again (redo), unless the reader has moved on by then; if the script can't
+   load, a retry button. */
+function needScript(src, loading, redo) {
+  if (scriptReady(src)) return true;
+  const line = (b, s) => `<p class="wq-wip wait"><i class="bub" aria-hidden="true"></i><span><b>${b}</b>${s}</span></p>`;
+  view.innerHTML = `<div class="wrap">${line(loading, "")}</div>`;
+  const page = view.firstElementChild;
+  loadScript(src).then(() => view.firstElementChild === page && redo(), () => {
+    if (view.firstElementChild !== page) return;
+    page.innerHTML = line("খোলা যায়নি", `ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button>`);
+    $("[data-retry]", page).onclick = route;
+  });
+  return false;
+}
 const answersReady = paper => scriptReady(`answers/paper/${paper}.js`);
 const loadAnswers = paper => loadScript(`answers/paper/${paper}.js`);
 const ansCache = new Map();
@@ -734,6 +756,7 @@ function written(id, section) {
     ready ? "উত্তর ভাগ করুন নম্বর বণ্টন মেনে; প্রতিটি অংশের নম্বর বৃত্তে দেওয়া" : "",
     "চিত্র, ছক আর একটি উদাহরণ নম্বর বাড়ায়"].filter(Boolean);
   $("#wTips").innerHTML = tips.map(t => `<li><span>${t}</span></li>`).join("");
+  if (ready) $("#wTips").insertAdjacentHTML("afterend", `<p class="w-acts"><a class="btn sm" href="#/wtest/${key}">এই প্রশ্নপত্র সময় ধরে লিখুন <span aria-hidden="true">→</span></a></p>`);
   if (!ready) $(".wbar .switch").style.display = "none";
 
   // Sticky bar: one bubble per question, filled when its answer is written.
@@ -810,16 +833,7 @@ function written(id, section) {
    note where the topic is taught. The chapter bubbles filter the list; the chapter is kept in the address. */
 const THEMES_SRC = "mcq/written-themes.js";
 function repeat(arg) {
-  if (!scriptReady(THEMES_SRC)) {
-    view.innerHTML = `<div class="wrap"><p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>প্রশ্নগুলো সাজানো হচ্ছে…</b></span></p></div>`;
-    const page = view.firstElementChild;
-    loadScript(THEMES_SRC).then(() => view.firstElementChild === page && repeat(arg), () => {
-      if (view.firstElementChild !== page) return;
-      page.innerHTML = `<p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>খোলা যায়নি</b>ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button></span></p>`;
-      $("[data-retry]", page).onclick = route;
-    });
-    return;
-  }
+  if (!needScript(THEMES_SRC, "প্রশ্নগুলো সাজানো হচ্ছে…", () => repeat(arg))) return;
   const W = D.written, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a)), exams = keys.map(k => parseInt(k));
   const year = e => bn(W[`${e}-school`].year), { themes } = window.ICT_REPEAT.group(W);
   const chs = allChapters().filter(c => themes.some(t => t.ch === c.id)), ch = chs.find(c => c.id === arg);
@@ -967,6 +981,14 @@ function setup(arg) {
       `<a class="btn sm" href="#/exam">চালিয়ে যান <span aria-hidden="true">→</span></a>`;
     $("#running").hidden = false;
   }
+  // A written practice left running: its option continues it.
+  const wRun = store.get("wexam", null);
+  if (wValid(wRun)) {
+    const w = $("#wQuick"), left = Math.max(1, Math.round((wRun.end - Date.now()) / 60000)), on = wRunning(wRun);
+    w.href = "#/wexam";
+    $("b", w).textContent = on ? "লিখিত অনুশীলন চলছে: চালিয়ে যান" : "লিখিত অনুশীলনের সময় শেষ: মিলিয়ে দেখুন";
+    $("small", w).textContent = `${wName(wRun.paper)} · ${bn(wRun.qs.length)}টি প্রশ্ন${on ? ` · প্রায় ${bn(left)} মিনিট বাকি` : ""}`;
+  }
   form.onsubmit = async e => {
     e.preventDefault();
     if (!(await okToReplace())) return;
@@ -996,6 +1018,9 @@ function setup(arg) {
       off: !wrongNow, opts: { count: 100, mins: "auto", neg: 0.25, mode: "mistakes", title: "শুধু আমার ভুল" } });
   $("#quickList").innerHTML = presets.map((p, i) => `<li><button type="button" class="opt quick-opt" data-preset="${p.id}"${p.off ? " disabled" : ""}>
       <i class="bub">${"কখগঘঙচ"[i]}</i><span class="otext"><b>${esc(p.title)}</b><small>${esc(p.meta)}</small></span><span class="go" aria-hidden="true">→</span></button></li>`).join("") +
+    // Rapid fire has its own page (seconds, chapters, sound), so this one is a link.
+    `<li><a class="opt quick-opt" href="#/rapid"><i class="bub">${"কখগঘঙচ"[presets.length]}</i><span class="otext"><b>র‍্যাপিড ফায়ার</b>` +
+    `<small>প্রতি প্রশ্নে ${bn(store.get("rf_secs", 5))} সেকেন্ড, প্রতি সেকেন্ডে টিক; সময় শেষে সঠিক উত্তর নিজেই দাগানো হয়</small></span><span class="go" aria-hidden="true">→</span></a></li>` +
     (all < 100 ? `<li class="quick-note">এখন পর্যন্ত পরীক্ষার প্রশ্ন আছে ${bn(all)}টি, তাই পূর্ণ মডেল টেস্টও ${bn(all)}টিতে থামবে।</li>` : "");
   $("#quickList").onclick = async e => {
     const b = e.target.closest("[data-preset]"); if (!b || b.disabled) return;
@@ -1207,11 +1232,13 @@ function toggleSheet(open) {
   if (open) showCurrentRow();
 }
 
+/* The time left as the exam bar shows it, mm:ss in Bangla digits; each digit in a fixed-width box so it doesn't jitter. */
+const clockHTML = left => [...bn(`${pad2(Math.floor(left / 60))}:${pad2(left % 60)}`)]
+  .map(c => (c === ":" ? '<span class="colon">:</span>' : `<span class="d">${c}</span>`)).join("");
 function tick() {
   if (!exam || !$("#clock")) return clearInterval(clock);
   const left = Math.max(0, Math.round((exam.end - Date.now()) / 1000));
-  $("#clock").innerHTML = [...bn(`${pad2(Math.floor(left / 60))}:${pad2(left % 60)}`)]
-    .map(c => (c === ":" ? '<span class="colon">:</span>' : `<span class="d">${c}</span>`)).join("");
+  $("#clock").innerHTML = clockHTML(left);
   $("#clock").classList.toggle("low", left <= Math.min(300, exam.mins * 12));
   if (left <= 0) return finish(true);
   timeWarning(left);
@@ -1220,14 +1247,14 @@ function tick() {
 /* A warning at 5 minutes left and again at 1 minute: a message, and a short buzz on phones that allow it.
    Each comes once per exam (remembered with the exam, so a reload doesn't repeat it), and only in an exam at least
    twice that long: a 6-minute exam gets no "5 minutes left". Coming back to an exam after both marks have passed
-   shows only the later one, with the real minutes left. */
+   shows only the later one, with the real minutes left. rec/save/atEnd: the timed written practice uses it too. */
 const WARN_AT = [300, 60];
-function timeWarning(left) {
-  const due = WARN_AT.filter(s => left <= s && exam.mins * 60 >= s * 2 && !(exam.warned || []).includes(s));
+function timeWarning(left, rec = exam, save = saveExam, atEnd = "সময় শেষ হলে উত্তরপত্র নিজে থেকেই জমা হয়ে যাবে।") {
+  const due = WARN_AT.filter(s => left <= s && rec.mins * 60 >= s * 2 && !(rec.warned || []).includes(s));
   if (!due.length) return;
-  exam.warned = [...(exam.warned || []), ...due]; saveExam();
+  rec.warned = [...(rec.warned || []), ...due]; save();
   const mins = bn(Math.max(1, Math.ceil(left / 60)));
-  toast(left <= 60 ? `আর ${mins} মিনিট বাকি। সময় শেষ হলে উত্তরপত্র নিজে থেকেই জমা হয়ে যাবে।` : `আর ${mins} মিনিট বাকি।`, 6000);
+  toast(left <= 60 ? `আর ${mins} মিনিট বাকি। ${atEnd}` : `আর ${mins} মিনিট বাকি।`, 6000);
   // A phone may buzz only after the page has been tapped; asking earlier just logs an error.
   try { if (navigator.vibrate && navigator.userActivation?.hasBeenActive !== false) navigator.vibrate(200); } catch (e) {}
 }
@@ -1300,6 +1327,324 @@ document.addEventListener("keydown", e => {
 });
 
 
+/* ================= RAPID FIRE ================= */
+/* #/rapid: a few seconds a question (5 unless changed). Every second ticks, the last one beeps higher; when the time
+   runs out the correct answer fills itself in, with its own sound, and the next question comes. An answer given in
+   time sounds right or wrong and shows the correct one. No negative marks. It ends on the usual result page (a
+   question that ran out counts as ফাঁকা), so the review and "ভুলগুলো আবার" work as for any exam.
+   #/rapidrun is the round itself; it lives only in this page's memory (a reload starts over). Questions with code,
+   a signal drawing or a picture are left out: they can't be read in a few seconds. */
+const RF_HOLD = { right: 800, wrong: 1600, out: 1300 };   // how long the marked answer stays before the next question
+let rf = null, rfTimer = 0, rfNext = 0;
+const rfPool = chapters => QS.filter(q => inExam(q) && !q.code && !q.wave && !/<svg/.test(q.q) && chapters.includes(q.c));
+const rfSound = () => store.get("rf_sound", true) !== false;
+
+/* The sounds. Most are made in the browser (Web Audio); the time-up one is a recording, sounds/answer-reveal.mp3
+   (downloaded on 2026-11-24 as dragon-studio-correct-472358.mp3, a Pixabay-style name; 1.3 s, recorded at full level).
+   The site loads it as a script, sounds/answer-reveal.js (made by tools/sounds.mjs), because a page opened straight from
+   the disk may load scripts but not fetch files. It loads the first time a sound is allowed and plays through the same
+   Web Audio. A phone only allows sound after a tap, so the start button calls unlock(). */
+const REVEAL_SRC = "sounds/answer-reveal.js", REVEAL_VOL = 0.4;   // the recording is at full level; 0.4 sits with the rest
+const SOUND = (() => {
+  let ctx = null, reveal = null, loading = false;
+  const get = () => {
+    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === "suspended") ctx.resume(); }
+    catch (e) { ctx = null; }
+    return ctx;
+  };
+  // The time-up recording, once. If it can't be had (no connection) the bell below plays instead, and the next tap
+  // tries again.
+  const load = c => {
+    if (reveal || loading || !c) return;
+    loading = true;
+    loadScript(REVEAL_SRC).then(() => {
+      const s = (window.ICT_SOUNDS || {})["answer-reveal"];
+      if (!s) throw new Error(REVEAL_SRC);
+      const bytes = Uint8Array.from(atob(s.data), ch => ch.charCodeAt(0));
+      return new Promise((ok, no) => c.decodeAudioData(bytes.buffer, ok, no));
+    }).then(buf => (reveal = buf), () => {}).finally(() => (loading = false));
+  };
+  const unlock = () => { const c = get(); load(c); return c; };
+  const tone = (freq, at, dur, type = "sine", vol = 0.2) => {
+    const c = get(); if (!c) return;
+    const t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  };
+  const file = (buf, vol) => {
+    const c = get(); if (!c) return;
+    const s = c.createBufferSource(), g = c.createGain();
+    s.buffer = buf; g.gain.value = vol;
+    s.connect(g); g.connect(c.destination); s.start();
+  };
+  // The fallback for the time-up sound: one strike of an exam-hall bell (a main note plus fainter, higher tones that
+  // aren't whole multiples of it and die away faster).
+  const bell = () => [[1, 0.2, 1.8], [2.76, 0.09, 1.0], [5.4, 0.045, 0.5], [8.93, 0.025, 0.3]]
+    .forEach(([k, vol, dur]) => tone(880 * k, 0, dur, "sine", vol));
+  const play = f => () => { if (rfSound()) f(); };
+  return {
+    unlock,
+    tick: play(() => tone(1050, 0, 0.05, "square", 0.05)),                                    // each second
+    last: play(() => { tone(1568, 0, 0.16, "square", 0.08); tone(1568, 0.2, 0.16, "square", 0.08); }),   // the last second
+    out: play(() => (reveal ? file(reveal, REVEAL_VOL) : bell())),                            // time up: the answer fills in
+    right: play(() => { tone(659, 0, 0.12, "sine", 0.22); tone(988, 0.1, 0.26, "sine", 0.22); }),
+    wrong: play(() => tone(155, 0, 0.34, "sawtooth", 0.09)),
+    ready: () => !!reveal                                                                      // for the checks
+  };
+})();
+
+function rapid() {
+  document.title = "র‍্যাপিড ফায়ার · ICT মাস্টার";
+  let secs = Math.min(30, Math.max(2, Number(store.get("rf_secs", 5)) || 5));
+  view.innerHTML = `
+  <div class="wrap setup rapid-setup">
+    <header class="doc-head">
+      <p class="crumb"><a href="#/">সূচি</a><i aria-hidden="true">/</i><a href="#/setup">পরীক্ষা</a><i aria-hidden="true">/</i>র‍্যাপিড ফায়ার</p>
+      <h1>র‍্যাপিড ফায়ার</h1>
+      <p class="doc-lede">প্রতি প্রশ্নে কয়েক সেকেন্ড। প্রতি সেকেন্ডে টিক, শেষ সেকেন্ডে আলাদা শব্দ; সময় শেষ হলে সঠিক উত্তরটি নিজেই দাগানো হয়ে পরের প্রশ্ন আসে। নেগেটিভ মার্ক নেই।</p>
+    </header>
+    <div class="running" id="rfRunning" hidden></div>
+    <form id="rfForm" novalidate>
+      <div class="fsec" role="group" aria-labelledby="rf1">
+        <p class="fsec-l" id="rf1"><span>১</span>প্রতি প্রশ্নে সময়<small>সেকেন্ড</small></p>
+        <div class="timebox">
+          <button type="button" class="step" data-step="-1" aria-label="এক সেকেন্ড কম">−</button>
+          <output class="digits" id="rfSecs" aria-live="polite"></output>
+          <button type="button" class="step" data-step="1" aria-label="এক সেকেন্ড বেশি">+</button>
+          <span class="hint" id="rfSecsHint"></span>
+        </div>
+      </div>
+      <div class="fsec" role="group" aria-labelledby="rf2">
+        <p class="fsec-l" id="rf2"><span>২</span>প্রশ্নসংখ্যা<small id="rfCountNote"></small></p>
+        <div class="pick">${[10, 20, 50, 100].map(n => `<label><input type="radio" name="count" value="${n}"${n === 20 ? " checked" : ""}><i class="bub">${bn(n)}</i></label>`).join("")}</div>
+      </div>
+      <div class="fsec" role="group" aria-labelledby="rf3">
+        <p class="fsec-l" id="rf3"><span>৩</span>অধ্যায়<small>একাধিক বাছতে পারেন।</small></p>
+        <div class="pick">${CH.map(ch => `<label><input type="checkbox" name="ch" value="${ch.id}" checked><span class="box">${CHECK}</span>${bn(ch.no)}. ${esc(ch.name)}</label>`).join("")}</div>
+      </div>
+      <div class="fsec" role="group" aria-labelledby="rf4">
+        <p class="fsec-l" id="rf4"><span>৪</span>শব্দ<small>ফোন সাইলেন্টে থাকলে শব্দ নাও আসতে পারে।</small></p>
+        <div class="rf-snd">
+          <label class="switch"><input type="checkbox" id="rfSnd"${rfSound() ? " checked" : ""}><span class="track" aria-hidden="true"></span><span>শব্দ চালু</span></label>
+          <button type="button" class="tbtn" id="rfTry">শুনে দেখুন</button>
+        </div>
+      </div>
+      <div class="summary">
+        <p id="rfSum"></p>
+        <button class="btn" type="submit">শুরু করুন <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </div>`;
+
+  const form = $("#rfForm");
+  const get = name => (form.querySelector(`input[name="${name}"]:checked`) || {}).value;
+  const chapters = () => $$('input[name="ch"]:checked', form).map(i => i.value);
+  function refresh() {
+    const have = rfPool(chapters()).length, n = Math.min(Number(get("count")), have);
+    $("#rfSecs").innerHTML = [...bn(pad2(secs))].map(d => `<i>${d}</i>`).join("");
+    $("#rfSecsHint").textContent = secs === 5 ? "সাধারণত ৫" : "";
+    $("#rfCountNote").textContent = `বাছাই করা অধ্যায়ে এমন প্রশ্ন আছে ${bn(have)}টি।`;
+    const total = n * secs;
+    $("#rfSum").innerHTML = n ? `${bn(n)}টি প্রশ্ন · প্রতিটিতে ${bn(secs)} সেকেন্ড <span>· সব মিলিয়ে ${total < 60 ? `${bn(total)} সেকেন্ড` : `প্রায় ${bn(Math.ceil(total / 60))} মিনিট`}</span>` : "<span>অন্তত একটি অধ্যায় বাছুন</span>";
+    form.querySelector('[type="submit"]').disabled = !n;
+  }
+  form.onchange = e => {
+    if (e.target.name === "ch" && !chapters().length) e.target.checked = true;   // keep at least one chapter
+    if (e.target.id === "rfSnd") store.set("rf_sound", e.target.checked);
+    refresh();
+  };
+  form.onclick = e => {
+    const step = e.target.closest("[data-step]");
+    if (step) { secs = Math.min(30, Math.max(2, secs + Number(step.dataset.step))); store.set("rf_secs", secs); refresh(); }
+    if (e.target.closest("#rfTry")) {
+      SOUND.unlock();
+      if (!rfSound()) return toast("শব্দ বন্ধ আছে। আগে “শব্দ চালু” করুন।");
+      [[SOUND.tick, 0], [SOUND.tick, 600], [SOUND.last, 1200], [SOUND.out, 1900]].forEach(([f, ms]) => setTimeout(f, ms));
+    }
+  };
+  form.onsubmit = e => {
+    e.preventDefault();
+    SOUND.unlock();                                  // inside the tap, so the phone lets the round make sounds
+    const ids = shuffle(rfPool(chapters()).map(q => q.id)).slice(0, Number(get("count")));
+    const chs = chapters();
+    rfStart(ids, secs, chs.length === CH.length ? "সব অধ্যায়" : chs.length === 1 ? chapterOf(chs[0]).name : `${bn(chs.length)}টি অধ্যায় থেকে`);
+  };
+  refresh();
+  if (rf) {
+    $("#rfRunning").innerHTML = `<p><b>একটি র‍্যাপিড ফায়ার থেমে আছে</b><span>${bn(rf.i + 1)}/${bn(rf.order.length)} নম্বর প্রশ্নে · প্রতিটিতে ${bn(rf.secs)} সেকেন্ড</span></p>` +
+      `<a class="btn sm" href="#/rapidrun">চালিয়ে যান <span aria-hidden="true">→</span></a>`;
+    $("#rfRunning").hidden = false;
+  }
+}
+
+function rfStart(ids, secs, what) {
+  if (!ids.length) return toast("এই বাছাইয়ে কোনো প্রশ্ন পাওয়া যায়নি।");
+  rf = { order: ids, ans: ids.map(() => null), i: 0, secs, title: `র‍্যাপিড ফায়ার · ${what} · ${bn(secs)} সেকেন্ড`, start: Date.now(), used: 0, locked: false };
+  location.hash = "#/rapidrun";
+}
+
+function rapidrun() {
+  if (!rf) { toast("এখন কোনো র‍্যাপিড ফায়ার চলছে না।"); return location.replace("#/rapid"); }
+  document.title = "র‍্যাপিড ফায়ার চলছে · ICT মাস্টার";
+  view.innerHTML = `
+  <div class="exam rapid" id="rfPage">
+    <h1 class="sr">${esc(rf.title)}</h1>
+    <div class="ebar">
+      <div class="wrap">
+        <div class="ebar-l"><span class="ebar-title">${esc(rf.title)}</span><span class="ebar-q">প্রশ্ন <b id="rfNo"></b> / ${bn(rf.order.length)}</span></div>
+        <div class="ebar-t"><span class="clock-l">সঠিক</span><span class="clock" id="rfRight"></span></div>
+        <button class="btn sm" type="button" id="rfPause">থামান</button>
+      </div>
+      <div class="eprog"><span id="rfProg"></span></div>
+    </div>
+    <div class="wrap rf-body">
+      <div class="rf-timer" aria-hidden="true">
+        <svg viewBox="0 0 120 120"><circle class="rf-track" cx="60" cy="60" r="52"/><circle class="rf-ring" id="rfRing" cx="60" cy="60" r="52" pathLength="100"/></svg>
+        <span class="rf-sec" id="rfSec"></span>
+      </div>
+      <div class="rf-paused" id="rfPaused" hidden><p>থামানো আছে</p><button class="btn" type="button" data-rf-resume>চালিয়ে যান</button></div>
+      <article class="qpane rf-q" id="rfQ"></article>
+      <div class="rf-foot">
+        <label class="switch"><input type="checkbox" id="rfSnd2"${rfSound() ? " checked" : ""}><span class="track" aria-hidden="true"></span><span>শব্দ</span></label>
+        <button class="tbtn" type="button" data-rf-end>এখানেই শেষ করুন</button>
+      </div>
+    </div>
+  </div>`;
+  const page = $("#rfPage");
+  page.addEventListener("click", async e => {
+    const o = e.target.closest("[data-opt]");
+    if (o) return rfAnswer(Number(o.dataset.opt));
+    if (e.target.closest("#rfPause")) return rf.paused ? rfResume() : rfPause();
+    if (e.target.closest("[data-rf-resume]")) return rfResume();
+    if (e.target.closest("[data-rf-end]")) {
+      const was = rf.paused; if (!was) rfPause();
+      if (await ask(`এখানেই শেষ করবেন? যে ${bn(rf.order.length - rf.i)}টি প্রশ্ন আসেনি, সেগুলো ফাঁকা ধরা হবে।`, "শেষ করুন", "চালিয়ে যান")) rfFinish();
+      else if (!was && rf) rfResume();
+    }
+  });
+  page.addEventListener("change", e => { if (e.target.id === "rfSnd2") store.set("rf_sound", e.target.checked); });
+  rfShow();
+}
+
+/* One question: draw it, start its seconds. */
+function rfShow() {
+  clearInterval(rfTimer); clearTimeout(rfNext);
+  if (!rf || !$("#rfQ")) return;
+  const q = QBY[rf.order[rf.i]];
+  rf.locked = false; rf.paused = false; rf.left = rf.secs * 1000; rf.shown = null;
+  $("#rfNo").textContent = bn(rf.i + 1);
+  $("#rfRight").textContent = bn(rf.ans.filter((a, k) => a !== null && a === QBY[rf.order[k]].a).length);
+  $("#rfProg").style.width = (rf.i / rf.order.length) * 100 + "%";
+  $("#rfQ").innerHTML = `
+    <div class="qhead"><span class="qno">${bn(pad2(rf.i + 1))}</span><span class="qsubj">${esc(chapterOf(q.c).name)}</span></div>
+    <h2 class="qtext">${qText(q)}</h2>
+    <ol class="opts">${q.o.map((o, i) => `<li><button type="button" class="opt" data-opt="${i}"><i class="bub">${LETTER[i]}</i><span class="otext">${o}</span><kbd>${i + 1}</kbd></button></li>`).join("")}</ol>`;
+  $("#rfPage").classList.remove("paused", "low");
+  $("#rfPaused").hidden = true; $("#rfPause").textContent = "থামান";
+  const ring = $("#rfRing");
+  ring.style.animationDuration = rf.secs + "s";
+  ring.classList.remove("run", "stop"); void ring.getBoundingClientRect(); ring.classList.add("run");   // restart the ring
+  rfGo();
+  if (document.hidden) rfPause();                 // the next question came while another tab was in front
+}
+function rfGo() {
+  rf.deadline = Date.now() + rf.left;
+  rfTimer = setInterval(rfTick, 50); rfTick();
+}
+/* Every whole second: a tick, the last one a higher double beep; at zero the correct answer fills in. */
+function rfTick() {
+  if (!rf || !$("#rfSec")) return clearInterval(rfTimer);
+  const left = rf.deadline - Date.now(), s = Math.max(0, Math.ceil(left / 1000));
+  if (s !== rf.shown) {
+    rf.shown = s;
+    $("#rfSec").textContent = bn(s);
+    $("#rfPage").classList.toggle("low", s === 1);
+    if (s > 1) SOUND.tick(); else if (s === 1) SOUND.last();
+  }
+  if (left <= 0) rfAnswer(null);
+}
+/* i: the option tapped, or null when the time ran out. */
+function rfAnswer(i) {
+  if (!rf || rf.locked || rf.paused) return;
+  rf.locked = true; clearInterval(rfTimer);
+  const q = QBY[rf.order[rf.i]], opts = $$("#rfQ .opt");
+  rf.used += rf.secs * 1000 - Math.max(0, rf.deadline - Date.now());   // the seconds this question took
+  $("#rfRing").classList.add("stop");
+  opts.forEach(b => (b.disabled = true));
+  const right = opts[q.a];
+  right.classList.add("ok"); $(".bub", right).classList.add("pop");
+  let hold;
+  if (i === null) {
+    right.insertAdjacentHTML("beforeend", '<span class="rf-tag">সময় শেষ · সঠিক উত্তর</span>');
+    SOUND.out(); hold = RF_HOLD.out;
+  } else {
+    rf.ans[rf.i] = i;
+    if (i === q.a) { SOUND.right(); hold = RF_HOLD.right; }
+    else { opts[i].classList.add("bad"); SOUND.wrong(); hold = RF_HOLD.wrong; }
+    $("#rfRight").textContent = bn(rf.ans.filter((a, k) => a !== null && a === QBY[rf.order[k]].a).length);
+  }
+  rfNext = setTimeout(() => {
+    if (!rf || !$("#rfQ")) return;
+    if (rf.i + 1 >= rf.order.length) return rfFinish();
+    rf.i++; rfShow();
+  }, hold);
+}
+function rfPause() {
+  if (!rf || rf.paused || rf.locked || !$("#rfPage")) return;
+  clearInterval(rfTimer);
+  rf.left = Math.max(0, rf.deadline - Date.now()); rf.paused = true;
+  $("#rfPage").classList.add("paused"); $("#rfPaused").hidden = false; $("#rfPause").textContent = "চালান";
+}
+function rfResume() {
+  if (!rf || !rf.paused) return;
+  SOUND.unlock();
+  rf.paused = false;
+  $("#rfPage").classList.remove("paused"); $("#rfPaused").hidden = true; $("#rfPause").textContent = "থামান";
+  rf.shown = null; rfGo();
+}
+/* The reader went to another page (or the lock came on): stop the clock. Coming back restarts the question on screen;
+   if its answer was already showing, the next one. */
+function rfLeave() {
+  if (!rf) return;
+  clearInterval(rfTimer); clearTimeout(rfNext);
+  if (rf.locked) { if (rf.i + 1 >= rf.order.length) return rfFinish(false); rf.i++; rf.locked = false; }
+  rf.paused = true;
+}
+/* Ends on the usual result page: a question that ran out, or never came, counts as ফাঁকা. go: false when the reader
+   has already gone elsewhere (the result is kept for the result page all the same). */
+function rfFinish(go = true) {
+  if (!rf) return;
+  clearInterval(rfTimer); clearTimeout(rfNext);
+  const stats = getStats();
+  rf.order.forEach((id, k) => {
+    if (k > rf.i) return;                           // never shown
+    const a = rf.ans[k], rec = stats[id] || { s: 0 };
+    rec.s = (rec.s || 0) + 1; rec.l = a === null ? "u" : a === QBY[id].a ? "r" : "w";
+    stats[id] = rec;
+  });
+  store.set("stats", stats);
+  store.set("last", { title: rf.title, order: rf.order, ans: rf.ans, flag: rf.order.map(() => false), neg: 0,
+    mins: Math.max(1, Math.ceil(rf.order.length * rf.secs / 60)), secs: Math.round(rf.used / 1000), rapid: rf.secs });
+  rf = null;
+  if (go) location.replace("#/result");   // the result takes the round's place, so Back doesn't return to it
+}
+// Leaving the page, or switching to another tab, pauses the round; it never runs on unseen.
+document.addEventListener("visibilitychange", () => { if (document.hidden && rf) rfPause(); });
+document.addEventListener("keydown", e => {
+  if (!rf || asking || document.body.dataset.screen !== "rapidrun" || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  const i = "1234".indexOf(k) >= 0 ? Number(k) - 1 : "১২৩৪".indexOf(k) >= 0 ? "১২৩৪".indexOf(k) : "abcd".indexOf(k);
+  if (i >= 0) rfAnswer(i);
+  else if (k === " ") rf.paused ? rfResume() : rfPause();
+  else return;
+  e.preventDefault();
+});
+
+
 /* ================= RESULT ================= */
 function result() {
   const r = store.get("last", null);
@@ -1314,6 +1659,7 @@ function result() {
   const marks = right - wrong * r.neg;
   const retry = r.order.filter((qi, k) => st[k] !== "r");   // this exam's wrong and skipped questions
   const time = `${bn(pad2(Math.floor(r.secs / 60)))}:${bn(pad2(r.secs % 60))}`;
+  const again = r.rapid ? "#/rapid" : "#/setup";   // a new one of the same kind
 
   const rows = CH.map(ch => {
     const idx = qs.map((q, i) => (q.c === ch.id ? i : -1)).filter(i => i >= 0);
@@ -1346,8 +1692,8 @@ function result() {
         <div class="res-acts">
           ${retry.length
             ? `<button class="btn" type="button" id="retryBtn">ভুলগুলো আবার দিন <span class="cnt">${bn(retry.length)}টি প্রশ্ন</span></button>
-               <a class="tbtn" href="#/setup">নতুন পরীক্ষা</a>`
-            : `<p class="allright">সব উত্তর ঠিক।</p><a class="btn" href="#/setup">নতুন পরীক্ষা দিন</a>`}
+               <a class="tbtn" href="${again}">নতুন পরীক্ষা</a>`
+            : `<p class="allright">সব উত্তর ঠিক।</p><a class="btn" href="${again}">নতুন পরীক্ষা দিন</a>`}
         </div>
       </div>
     </section>
@@ -1363,7 +1709,7 @@ function result() {
       <div class="filters" id="filters"></div>
       <div id="review"></div>
     </section>
-    <div class="res-foot"><a class="btn line" href="#/setup">নতুন পরীক্ষা দিন</a><a class="tbtn" href="#/">সূচিতে ফিরুন</a></div>
+    <div class="res-foot"><a class="btn line" href="${again}">নতুন পরীক্ষা দিন</a><a class="tbtn" href="#/">সূচিতে ফিরুন</a></div>
   </div>`;
 
   const FILTERS = [["all", "সব"], ["w", "ভুল"], ["u", "ফাঁকা"], ["f", "পরে দেখব"]];
@@ -1396,6 +1742,7 @@ function result() {
   $("#filters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; renderReview(); } };
   // Retest only this exam's wrong and skipped questions, at the real exam's pace.
   if ($("#retryBtn")) $("#retryBtn").onclick = async () => {
+    if (r.rapid) { SOUND.unlock(); return rfStart(shuffle(retry), r.rapid, "ভুলগুলো আবার"); }   // a rapid-fire round retries as one
     if (!(await okToReplace())) return;
     startExam({ only: retry, count: retry.length, mins: "auto", neg: r.neg, title: `ভুলগুলো আবার · ${r.title}`, mode: "retry" });
   };
@@ -1403,24 +1750,331 @@ function result() {
 }
 
 
+/* ================= TIMED WRITTEN PRACTICE ================= */
+/* Writing a past paper against the clock, the way the real three-hour paper is sat:
+   #/wtest/<paper>  choose the paper and its questions; the time follows their marks, at the paper's own rate
+   #/wexam          the clock runs over the chosen questions as printed. The answer is written on paper (a box to type
+                    in is there too, for those who'd rather). Each question shows its share of the time, and the one
+                    the clock says should be in hand now is marked. The model answers stay out of the page.
+   #/wresult        each question's model answer under what was typed, and a mark the reader gives themselves.
+   Kept in this browser: "wexam" (the one running), "wlast" (the last finished one, with its marks), "whist" (a short
+   history, newest first). */
+let wx = null, wclock = 0, wSaveTimer = 0;
+const wPapers = () => Object.keys(D.written).sort((a, b) => parseInt(b) - parseInt(a));
+const wMarks = q => numOf(marksTotal(q.marks)) || 1;
+const wFull = W => W.questions.reduce((t, q) => t + wMarks(q), 0);
+const wPace = (W, q) => W.mins * wMarks(q) / wFull(W);                  // minutes, at the real paper's rate
+const wPick = (W, ns) => W.questions.filter(q => ns.includes(q.n));        // in the paper's order
+const wAuto = (W, ns) => Math.max(1, Math.round(wPick(W, ns).reduce((t, q) => t + wPace(W, q), 0)));
+const wValid = r => !!(r && D.written[r.paper] && Array.isArray(r.qs) && r.qs.length && wPick(D.written[r.paper], r.qs).length === r.qs.length);
+const wRunning = r => wValid(r) && Date.now() < r.end;
+const wName = key => `${ord(parseInt(key))} · ${bn(D.written[key].year)}`;
+const wMinsText = secs => secs < 60 ? `${bn(secs)} সেকেন্ড` : `${bn(Math.floor(secs / 60))} মিনিট${secs % 60 ? ` ${bn(secs % 60)} সেকেন্ড` : ""}`;
+// Each chosen question's window within the time, by its share of the marks: [from, to) in minutes.
+const wWindows = (W, ns, mins) => {
+  const qs = wPick(W, ns), all = qs.reduce((t, q) => t + wMarks(q), 0);
+  let at = 0;
+  return qs.map(q => { const from = at; at += mins * wMarks(q) / all; return { q, from, to: at }; });
+};
+async function okToReplaceW() {
+  return !wRunning(store.get("wexam", null)) || ask("একটি লিখিত অনুশীলন এখনো চলছে। সেটি বাদ দিয়ে নতুন শুরু করবেন?", "নতুন শুরু করুন");
+}
+function wStart(paper, qs, mins) {
+  const now = Date.now();
+  wx = { paper, qs, mins, start: now, end: now + mins * 60000, typed: {}, warned: [] };
+  store.set("wexam", wx);
+  location.hash = "#/wexam";
+}
+
+function wtest(arg) {
+  const keys = wPapers(), key = D.written[arg] ? arg : keys[0], W = D.written[key], qs = W.questions;
+  document.title = `সময় ধরে লিখুন · ${wName(key)} · ICT মাস্টার`;
+  const values = [...new Set(qs.map(wMarks))].sort((a, b) => b - a);
+  view.innerHTML = `
+  <div class="wrap setup wtest">
+    <header class="doc-head">
+      <p class="crumb"><a href="#/">সূচি</a><i aria-hidden="true">/</i><a href="#/" data-home="written">লিখিত প্রশ্ন</a><i aria-hidden="true">/</i>সময় ধরে লিখুন</p>
+      <h1>সময় ধরে লিখুন</h1>
+      <p class="doc-lede">প্রশ্ন বাছুন, ঘড়ি চালু করুন, আর আসল পরীক্ষার মতো খাতায় লিখুন। নমুনা উত্তর লুকানো থাকবে; শেষে নিজের লেখা তার সঙ্গে মিলিয়ে নিজেই নম্বর দিন।</p>
+    </header>
+    <div class="running" id="wRunning" hidden></div>
+    <form id="wForm" novalidate>
+      <div class="fsec" role="group" aria-labelledby="wf1">
+        <p class="fsec-l" id="wf1"><span>১</span>প্রশ্নপত্র<small>কততম শিক্ষক নিবন্ধন</small></p>
+        <div class="pick wt-papers">${keys.map(k => `<label title="${esc(wName(k))}"><input type="radio" name="paper" value="${k}"${k === key ? " checked" : ""}><i class="bub">${bn(parseInt(k))}</i></label>`).join("")}</div>
+      </div>
+      <div class="fsec" role="group" aria-labelledby="wf2">
+        <p class="fsec-l" id="wf2"><span>২</span>প্রশ্ন<small>${esc(wName(key))} · ${esc(W.time)} · পূর্ণমান ${W.full}</small></p>
+        <div>
+          <p class="wt-quick"><button type="button" class="tbtn" data-sel="all">সব</button>${values.length > 1 ? values.map(v => `<button type="button" class="tbtn" data-sel="${v}">শুধু ${bn(v)} নম্বরের</button>`).join("") : ""}<button type="button" class="tbtn" data-sel="one">এলোমেলো একটি</button><button type="button" class="tbtn" data-sel="none">কোনোটিই না</button></p>
+          <ol class="wt-list">${qs.map(q => `<li><label><input type="checkbox" name="q" value="${q.n}" checked><i class="bub">${bn(q.n)}</i><span class="wt-q">${wShort(q)}</span><span class="wt-m">${marksTotal(q.marks)} নম্বর<br>${bn(Math.round(wPace(W, q)))} মিনিট</span></label></li>`).join("")}</ol>
+        </div>
+      </div>
+      <div class="fsec" role="group" aria-labelledby="wf3">
+        <p class="fsec-l" id="wf3"><span>৩</span>সময়<small>মিনিট</small></p>
+        <div class="timebox">
+          <button type="button" class="step" data-step="-1" aria-label="সময় কম">−</button>
+          <output class="digits" id="wMins" aria-live="polite"></output>
+          <button type="button" class="step" data-step="1" aria-label="সময় বেশি">+</button>
+          <span class="hint" id="wMinsHint"></span>
+        </div>
+      </div>
+      <div class="summary">
+        <p id="wSum"></p>
+        <button class="btn" type="submit">ঘড়ি চালু করুন <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+    <section class="wt-hist" id="wHist" hidden></section>
+  </div>`;
+
+  const form = $("#wForm");
+  let mins = 0, touched = false;
+  const chosen = () => $$('input[name="q"]:checked', form).map(i => Number(i.value));
+  function refresh() {
+    const ns = chosen(), marks = wPick(W, ns).reduce((t, q) => t + wMarks(q), 0);
+    if (!touched) mins = ns.length ? wAuto(W, ns) : 0;
+    $("#wMins").innerHTML = [...bn(pad2(mins))].map(d => `<i>${d}</i>`).join("");
+    $("#wMinsHint").textContent = touched ? "" : ns.length === qs.length ? `পুরো প্রশ্নপত্র, ${W.time}` : "নম্বর অনুযায়ী, আসল পরীক্ষার হারে";
+    $("#wSum").innerHTML = ns.length ? `${bn(ns.length)}টি প্রশ্ন · ${bn(marks)} নম্বর · ${bn(mins)} মিনিট` : "<span>অন্তত একটি প্রশ্ন বাছুন</span>";
+    form.querySelector('[type="submit"]').disabled = !ns.length;
+  }
+  form.onchange = e => {
+    if (e.target.name === "paper") return location.replace(`#/wtest/${e.target.value}`);
+    if (e.target.name === "q") touched = false;
+    refresh();
+  };
+  form.onclick = e => {
+    const sel = e.target.closest("[data-sel]"), step = e.target.closest("[data-step]");
+    if (sel) {
+      const v = sel.dataset.sel, boxes = $$('input[name="q"]', form), one = boxes[Math.floor(Math.random() * boxes.length)];
+      boxes.forEach(b => (b.checked = v === "all" || (v === "one" ? b === one : v !== "none" && wMarks(qs.find(q => q.n === Number(b.value))) === Number(v))));
+      touched = false; refresh();
+    }
+    if (step && chosen().length) {
+      // a minute at a time up to half an hour, then five
+      const up = Number(step.dataset.step) > 0, by = (up ? mins >= 30 : mins > 30) ? 5 : 1;
+      mins = Math.min(240, Math.max(1, mins + (up ? by : -by))); touched = true; refresh();
+    }
+  };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const ns = chosen();
+    if (!ns.length || !(await okToReplaceW())) return;
+    wStart(key, ns, mins);
+  };
+  refresh();
+
+  // One still running: continue it rather than lose it. One whose time ran out while away: open its comparison.
+  const running = store.get("wexam", null);
+  if (wValid(running)) {
+    const left = Math.round((running.end - Date.now()) / 60000), what = `${esc(wName(running.paper))} · ${bn(running.qs.length)}টি প্রশ্ন`;
+    $("#wRunning").innerHTML = wRunning(running)
+      ? `<p><b>একটি লিখিত অনুশীলন চলছে</b><span>${what} · প্রায় ${bn(Math.max(1, left))} মিনিট বাকি</span></p><a class="btn sm" href="#/wexam">চালিয়ে যান <span aria-hidden="true">→</span></a>`
+      : `<p><b>একটি লিখিত অনুশীলনের সময় শেষ হয়েছে</b><span>${what}</span></p><a class="btn sm" href="#/wexam">মিলিয়ে দেখুন <span aria-hidden="true">→</span></a>`;
+    $("#wRunning").hidden = false;
+  }
+  // The last few, newest first; the newest opens its comparison again.
+  const hist = store.get("whist", []).filter(h => h && D.written[h.paper]).slice(0, 5);
+  if (hist.length) {
+    $("#wHist").innerHTML = `<h2 class="wt-hist-h">আগের অনুশীলন</h2><ol>${hist.map((h, i) => {
+      const line = `<span class="wt-hist-p">${esc(wName(h.paper))} · প্রশ্ন ${h.qs.map(bn).join(", ")}</span>` +
+        `<span>${wMinsText(h.secs)} / ${bn(h.mins)} মিনিট</span><span>${h.got === null || h.got === undefined ? "নম্বর দেওয়া হয়নি" : `নিজের নম্বর ${bn(h.got)}/${bn(h.of)}`}</span>`;
+      return `<li>${i === 0 ? `<a href="#/wresult">${line}<b aria-hidden="true">→</b></a>` : `<div>${line}</div>`}</li>`;
+    }).join("")}</ol>`;
+    $("#wHist").hidden = false;
+  }
+}
+
+function wexamView() {
+  wx = wx || store.get("wexam", null);
+  if (!wValid(wx)) { wx = null; store.del("wexam"); toast("এখন কোনো লিখিত অনুশীলন চলছে না। প্রশ্ন বেছে শুরু করুন।"); return location.replace("#/wtest"); }
+  if (Date.now() >= wx.end) return wDone(true);       // the time ran out while the page was closed
+  const W = D.written[wx.paper], wins = wWindows(W, wx.qs, wx.mins), marks = wins.reduce((t, w) => t + wMarks(w.q), 0);
+  const span = w => `${bn(Math.round(w.from))}–${bn(Math.round(w.to))} মিনিটে`;
+  document.title = "লিখিত অনুশীলন চলছে · ICT মাস্টার";
+  loadAnswers(wx.paper).catch(() => {});             // fetched now, shown only at the end, so the comparison opens at once
+  view.innerHTML = `
+  <div class="exam wexam">
+    <h1 class="sr">লিখিত অনুশীলন: ${esc(wName(wx.paper))}</h1>
+    <div class="ebar">
+      <div class="wrap">
+        <div class="ebar-l"><span class="ebar-title">${esc(wName(wx.paper))} · লিখিত অনুশীলন</span><span class="ebar-q">${bn(wins.length)}টি প্রশ্ন · ${bn(marks)} নম্বর</span></div>
+        <div class="ebar-t"><span class="clock-l">সময় বাকি</span><span class="clock" id="wClock"></span></div>
+        <button class="btn sm" type="button" data-wdone>শেষ করুন</button>
+      </div>
+      <div class="eprog" title="যতটা সময় গেছে"><span id="wProg"></span></div>
+    </div>
+    <div class="wrap wx-body">
+      <p class="wx-how"><i class="bub" aria-hidden="true"></i><span><b>খাতায় লিখুন</b>প্রতিটি প্রশ্নের পাশে তার ভাগের সময়; ঘড়ি অনুযায়ী এখন যেটি লেখার কথা, সেটি চিহ্নিত থাকবে। “অথবা” থাকলে যেকোনো একটির উত্তর দিন। নমুনা উত্তর দেখাবে শেষ করার পরে।</span></p>
+      ${wins.map(w => {
+        const q = w.q, typed = (wx.typed || {})[q.n] || "";
+        return `<section class="wq wx-q" id="q${q.n}" data-from="${w.from}" data-to="${w.to}">
+        <div class="wq-m"><span class="wq-no">${bn(pad2(q.n))}</span><span class="wq-meta">${marksTotal(q.marks)} নম্বর<br>প্রায় ${bn(Math.round(w.to - w.from))} মিনিট<br>${span(w)}<b class="wx-now">ঘড়ি অনুযায়ী এখন এটি</b></span></div>
+        <div class="wq-main">
+          <div class="wq-q"><div class="wq-text">${wBody(q)}${q.note ? `<p class="wq-note">${q.note}</p>` : ""}</div><span class="wq-marks">${q.marks}</span></div>
+          <details class="wx-type"${typed ? " open" : ""}><summary>এখানে টাইপ করতে চাইলে</summary>
+            <textarea data-n="${q.n}" rows="8" aria-label="প্রশ্ন ${bn(q.n)}-এর উত্তর" placeholder="যা লিখবেন তা এই ব্রাউজারেই থাকবে, শেষে নমুনা উত্তরের পাশে দেখাবে।">${esc(typed)}</textarea></details>
+        </div>
+      </section>`;
+      }).join("")}
+      <div class="wx-end">
+        <button class="btn" type="button" data-wdone>শেষ করুন, নমুনা উত্তর দেখুন <span aria-hidden="true">→</span></button>
+        <button class="tbtn" type="button" data-wquit>অনুশীলন বাতিল করুন</button>
+      </div>
+    </div>
+  </div>`;
+
+  const page = view.firstElementChild, save = () => store.set("wexam", wx);
+  page.addEventListener("input", e => {
+    const t = e.target.closest("textarea[data-n]"); if (!t || !wx) return;
+    wx.typed = { ...(wx.typed || {}), [t.dataset.n]: t.value };
+    clearTimeout(wSaveTimer); wSaveTimer = setTimeout(save, 400);
+  });
+  page.addEventListener("click", async e => {
+    if (!wx) return;
+    if (e.target.closest("[data-wdone]")) {
+      const left = Math.max(1, Math.round((wx.end - Date.now()) / 60000));
+      if (await ask(`এখনো প্রায় ${bn(left)} মিনিট বাকি। শেষ করে নমুনা উত্তর দেখবেন?`, "শেষ করুন", "লিখতে থাকুন") && wx) wDone(false);
+    } else if (e.target.closest("[data-wquit]")) {
+      if (await ask("অনুশীলন বাতিল করবেন? টাইপ করা লেখাসহ এর কিছুই থাকবে না।", "বাতিল করুন", "চালিয়ে যান") && wx) {
+        const paper = wx.paper;
+        clearInterval(wclock); wx = null; store.del("wexam"); location.replace(`#/wtest/${paper}`);
+      }
+    }
+  });
+  clearInterval(wclock); wclock = setInterval(wTick, 500); wTick();
+}
+
+function wTick() {
+  if (!wx || !$("#wClock")) return clearInterval(wclock);
+  const left = Math.max(0, Math.round((wx.end - Date.now()) / 1000)), gone = (Date.now() - wx.start) / 60000;
+  $("#wClock").innerHTML = clockHTML(left);
+  $("#wClock").classList.toggle("low", left <= Math.min(300, wx.mins * 12));
+  $("#wProg").style.width = Math.min(100, (gone / wx.mins) * 100) + "%";
+  // The question the clock says should be in hand: the one whose window holds the time gone.
+  $$(".wx-q").forEach(s => s.classList.toggle("now", gone >= Number(s.dataset.from) && gone < Number(s.dataset.to)));
+  if (left <= 0) return wDone(true);
+  timeWarning(left, wx, () => store.set("wexam", wx), "সময় শেষ হলে নমুনা উত্তর খুলে যাবে।");
+}
+
+function wDone(timeUp) {
+  if (!wx) return;
+  clearInterval(wclock); clearTimeout(wSaveTimer);
+  const W = D.written[wx.paper], secs = Math.round((Math.min(Date.now(), wx.end) - wx.start) / 1000);
+  const of = wPick(W, wx.qs).reduce((t, q) => t + wMarks(q), 0);
+  store.set("wlast", { paper: wx.paper, qs: wx.qs, mins: wx.mins, start: wx.start, secs, typed: wx.typed || {}, score: {}, timeUp: !!timeUp });
+  store.set("whist", [{ at: wx.start, paper: wx.paper, qs: wx.qs, mins: wx.mins, secs, of, got: null }, ...store.get("whist", [])].slice(0, 30));
+  wx = null; store.del("wexam");
+  clearTimeout(toastTimer); $("#toast").hidden = true;
+  if (timeUp) toast("সময় শেষ। কলম নামান; এবার নমুনা উত্তরের সঙ্গে মিলিয়ে দেখুন।", 5000);
+  location.replace("#/wresult");                     // the comparison takes the practice's place, so Back doesn't return to it
+}
+
+function wresult(section) {
+  const r = store.get("wlast", null);
+  if (!wValid(r)) { toast("এখনো কোনো লিখিত অনুশীলন শেষ হয়নি। প্রশ্ন বেছে শুরু করুন।"); return location.replace("#/wtest"); }
+  if (!needScript(`answers/paper/${r.paper}.js`, "নমুনা উত্তর আনা হচ্ছে…", () => wresult(section))) return;
+  const W = D.written[r.paper], qs = wPick(W, r.qs), of = qs.reduce((t, q) => t + wMarks(q), 0);
+  r.score = r.score || {};
+  document.title = `লিখিত অনুশীলনের ফল · ${wName(r.paper)} · ICT মাস্টার`;
+  view.innerHTML = `
+  <article class="written wresult">
+    <header class="doc-head wrap">
+      <p class="crumb"><a href="#/">সূচি</a><i aria-hidden="true">/</i><a href="#/wtest/${r.paper}">সময় ধরে লিখুন</a><i aria-hidden="true">/</i>মিলিয়ে দেখুন</p>
+      <h1>${r.timeUp ? "সময় শেষ" : "লেখা শেষ"}: মিলিয়ে দেখুন</h1>
+      <p class="doc-lede">প্রতিটি প্রশ্নের নমুনা উত্তর পড়ে নিজের খাতার সঙ্গে মেলান। প্রতিটি অংশের নম্বর বৃত্তে দেওয়া; সেই হিসাবে নিচের ঘরে নিজেই নম্বর দিন।</p>
+      <p class="doc-meta"><span>প্রশ্নপত্র <b>${esc(wName(r.paper))}</b></span><span>প্রশ্ন <b>${r.qs.map(bn).join(", ")}</b></span><span>সময় লেগেছে <b>${wMinsText(r.secs)}</b> (${bn(r.mins)} মিনিটের মধ্যে)</span></p>
+    </header>
+    <div class="secbar wbar"><div class="wrap"><nav aria-label="প্রশ্ন" id="secnav">${qs.map(q => `<a href="#/wresult/q${q.n}" aria-label="প্রশ্ন ${bn(q.n)}"><i class="bub" data-sn="${q.n}">${bn(q.n)}</i></a>`).join("")}</nav></div></div>
+    <div class="wrap">
+      ${qs.map(q => {
+        const typed = (r.typed[q.n] || "").trim();
+        return `<section class="wq" id="q${q.n}">
+        <div class="wq-m"><span class="wq-no">${bn(pad2(q.n))}</span><span class="wq-meta">${marksTotal(q.marks)} নম্বর</span></div>
+        <div class="wq-main">
+          <div class="wq-q"><div class="wq-text">${wBody(q)}${q.note ? `<p class="wq-note">${q.note}</p>` : ""}</div><span class="wq-marks">${q.marks}</span></div>
+          ${typed ? `<div class="wr-mine"><p class="wr-mine-h">আপনার টাইপ করা উত্তর</p><div class="wr-mine-t">${esc(typed)}</div></div>` : ""}
+          <p class="wr-model">নমুনা উত্তর</p>
+          <div class="wq-ans"></div>
+          <div class="wscore" data-n="${q.n}" data-max="${wMarks(q)}"><span class="wscore-l">আপনার নম্বর</span>
+            <button type="button" class="step" data-d="-1" aria-label="এক নম্বর কম">−</button><output aria-live="polite"></output><span class="wscore-of">/ ${bn(wMarks(q))}</span>
+            <button type="button" class="step" data-d="1" aria-label="এক নম্বর বেশি">+</button></div>
+        </div>
+      </section>`;
+      }).join("")}
+      <div class="wx-end">
+        <button class="btn" type="button" data-again>এই প্রশ্নগুলো আবার লিখুন</button>
+        <a class="btn line" href="#/wtest/${r.paper}">অন্য প্রশ্ন বাছুন</a>
+        <a class="tbtn" href="#/written/${r.paper}">পুরো প্রশ্নপত্র ও উত্তর <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="summary"><p id="wGot"></p><a class="btn sm" href="#/wtest/${r.paper}">আরেকটি অনুশীলন <span aria-hidden="true">→</span></a></div>
+    </div>
+  </article>`;
+
+  // The model answers, drawn as on the paper's own page (with the side notes and any reused parts).
+  qs.forEach(q => {
+    const box = $(`#q${q.n}`), ans = $(".wq-ans", box), tpl = writtenAnswer(r.paper, q.n);
+    if (!tpl) { ans.innerHTML = `<p class="wq-wip"><i class="bub" aria-hidden="true"></i><span><b>নমুনা উত্তর নেই</b>এই প্রশ্নের নমুনা উত্তর এখনো লেখা হয়নি।</span></p>`; return; }
+    const part = tpl.content.cloneNode(true), side = part.querySelector("aside.side");
+    ans.appendChild(part.querySelector(".ans-body"));
+    fillIncludes(ans);
+    if (side) { side.classList.add("wq-side"); box.appendChild(side); }
+  });
+
+  // Self-marking: − and + per question, 0 to its full marks; kept with the result and in the history.
+  const show = () => {
+    $$(".wscore").forEach(s => { const v = r.score[s.dataset.n]; $("output", s).textContent = v === undefined ? "–" : bn(v); });
+    $$("#secnav .bub").forEach(b => b.classList.toggle("on", r.score[b.dataset.sn] !== undefined));
+    const done = qs.filter(q => r.score[q.n] !== undefined), got = done.reduce((t, q) => t + r.score[q.n], 0);
+    $("#wGot").innerHTML = done.length ? `নিজের নম্বর <b>${bn(got)}/${bn(done.length === qs.length ? of : done.reduce((t, q) => t + wMarks(q), 0))}</b>` +
+      (done.length < qs.length ? ` <span>· ${bn(done.length)}/${bn(qs.length)}টি প্রশ্নে দেওয়া</span>` : ` <span>· ${bn(Math.round(got * 100 / of))}%</span>`)
+      : "<span>প্রতিটি প্রশ্নের শেষে নিজেই নম্বর দিন</span>";
+    return done.length === qs.length ? got : null;
+  };
+  const page = view.firstElementChild;
+  page.addEventListener("click", e => {
+    const b = e.target.closest(".wscore [data-d]");
+    if (b) {
+      const s = b.closest(".wscore"), n = s.dataset.n, max = Number(s.dataset.max), d = Number(b.dataset.d), v = r.score[n];
+      r.score[n] = v === undefined ? (d > 0 ? 1 : 0) : Math.min(max, Math.max(0, v + d));
+      const got = show();
+      store.set("wlast", r);
+      store.set("whist", store.get("whist", []).map(h => (h && h.at === r.start ? { ...h, got } : h)));
+      return;
+    }
+    if (e.target.closest("[data-again]")) okToReplaceW().then(ok => ok && wStart(r.paper, r.qs, r.mins));
+  });
+  show();
+  setupSectionBar(".wq");
+  liftFab();
+  if (section && document.getElementById(section)) scrollOnOpen(section);
+}
+
+
 /* ================= ROUTER ================= */
-const ROUTES = { "": home, mcq, note, written, repeat, setup, exam: examView, result };
+const ROUTES = { "": home, mcq, note, written, repeat, setup, exam: examView, result, wtest, wexam: wexamView, wresult, rapid, rapidrun };
 function route() {
   if (document.documentElement.classList.contains("locked")) return;   // nothing is drawn behind the password screen
   const [name = "", arg, sub] = location.hash.replace(/^#\/?/, "").split("/");
   const screen = Object.prototype.hasOwnProperty.call(ROUTES, name) ? name : "";
   if (screen !== "exam") { clearInterval(clock); }
+  if (screen !== "rapidrun") rfLeave();
+  if (screen !== "wexam") { clearInterval(wclock); if (wx) { clearTimeout(wSaveTimer); store.set("wexam", wx); } }   // a practice left running keeps its typing
   document.body.dataset.screen = screen || "home";
   ROUTES[screen](arg && decodeURIComponent(arg), sub);
   // Top links (computers, tablets) and the bottom tab bar (phones) mark the same section. A note belongs to সূচি.
-  const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", repeat: "mcq", setup: "setup", exam: "setup", result: "setup" }[screen];
+  const section = { "": "home", note: "home", mcq: "mcq", written: "mcq", repeat: "mcq", setup: "setup", exam: "setup", result: "setup",
+    wtest: "setup", wexam: "setup", wresult: "setup", rapid: "setup", rapidrun: "setup" }[screen];
   $$(".nav a, .tabbar a").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === section));
-  if (!sub) window.scrollTo(0, 0);
+  if (!sub && !(screen === "wresult" && arg)) window.scrollTo(0, 0);
   // Floating shortcuts: home everywhere but home; lifted over the exam form's sticky summary.
   $("#toHome").hidden = screen === "";
+  liftFab();
+  syncFab();
+}
+function liftFab() {
   const sum = $("#view .summary");
   $("#fab").style.setProperty("--fab-lift", sum ? `${sum.offsetHeight + 12}px` : "0px");
-  syncFab();
 }
 addEventListener("hashchange", route);
 
@@ -1504,7 +2158,9 @@ function openToday() {
 
 function lock() {
   if (asking) asking(false);             // a yes/no box left open closes as "no"
-  clearInterval(clock);                  // a running exam keeps its saved answers and end time
+  clearInterval(clock); clearInterval(wclock);   // a running exam keeps its saved answers and end time
+  rfLeave();                             // a rapid-fire round stops where it is
+  if (wx) { clearTimeout(wSaveTimer); store.set("wexam", wx); }   // and a written practice its typing
   ROOT.classList.add("locked");
   document.body.dataset.screen = "locked";   // so the exam's answer keys do nothing
   view.replaceChildren();                // nothing stays on the page behind the lock

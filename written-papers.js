@@ -5,7 +5,7 @@
    alts: [choice, choice] where the paper prints more than one "অথবা" for a question.
    note: a short remark shown under the question (a misprint, a missing formula).
    Formulas: <span class="ov">X</span> draws a bar over X. Words the printer garbled are written as meant (DOS, AND, EPROM).
-   Model answers can be added later as <template id="wa-<paper>-<n>"> in index.html, as for the ১৮তম paper. */
+   Model answers are in answers/<paper>.js; app.js loads a paper's bundle (answers/paper/) when it opens. */
 (function () {
   const W = window.KHATA_DEMO.written;
   const ov = s => `<span class="ov">${s}</span>`;

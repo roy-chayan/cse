@@ -2,7 +2,7 @@
 //   node tools/answers/build-10-school.mjs
 // Three sources, so nothing is written twice:
 //   - worked blocks already in the chapter notes (the number-system calculations, the gates, the circuit, the flowchart),
-//     copied from index.html at build time; rerun this after changing those blocks
+//     copied from the chapter notes (notes/chNN.js) at build time; rerun this after changing those blocks
 //   - earlier papers' answers to the same question, reused in the page with data-include (fillIncludes in app.js)
 //   - new writing where nothing existed yet (below)
 // Every number written here is computed.

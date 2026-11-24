@@ -1,4 +1,4 @@
-/* অধ্যায় ৪ · লজিক সার্কিট ও লজিক গেট — 113 questions: 1–102 from the book, in its order; 103–113 written for this site (universal gates).
+/* অধ্যায় ৪ · লজিক সার্কিট ও লজিক গেট — 129 questions: 1–102 from the book, in its order; 103–129 written for this site, grouped by the note's sections.
    q: question · o: options ক খ গ ঘ · a: the answer letter · x: explanation (written for this site)
    t: an exam the question appeared in · warn: a caution shown with the explanation when the answer is debated
    noExam: true keeps a question out of exams (more than one option is correct); it still shows in the chapter list.
@@ -241,6 +241,40 @@
     { q: "একটি NOR গেটের দুই ইনপুটে A ও A দিলে আউটপুট কী হবে?", o: ["A", "<span class=\"ov\">A</span>", "০", "১"], a: "খ",
       x: "<span class=\"ov\">A + A</span> = <span class=\"ov\">A</span>, কারণ A + A = A; তাই একটি NOR দিয়েই NOT গেট।" },
     { q: "সার্বজনীন গেট দিয়ে পুরো চিপ তৈরির প্রধান সুবিধা কী?", o: ["চিপটি বিদ্যুৎ ছাড়াই চলে", "যেকোনো বর্তনীতে গেটের সংখ্যা সবসময় কমে যায়", "এক ধরনের গেট বানিয়েই সব বর্তনী তৈরি করা যায়, তাই খরচ ও জটিলতা কমে", "শুধু যোগের কাজ করা যায়"], a: "গ",
-      x: "NAND বা NOR দিয়েই AND, OR, NOT, তাই যেকোনো বর্তনী বানানো যায়; কারখানায় এক ধরনের গেট বানালেই চলে। গেটের সংখ্যা বরং অনেক সময় বাড়ে (যেমন AND-এর জন্য ২টি NAND)।" }
+      x: "NAND বা NOR দিয়েই AND, OR, NOT, তাই যেকোনো বর্তনী বানানো যায়; কারখানায় এক ধরনের গেট বানালেই চলে। গেটের সংখ্যা বরং অনেক সময় বাড়ে (যেমন AND-এর জন্য ২টি NAND)।" },
+    // প্রশ্ন ১১৪–১১৯ · সত্যক সারণি (এই সাইটের জন্য লেখা)
+    { q: "৪টি ইনপুটের সত্যক সারণিতে কয়টি সারি থাকে?", o: ["৪", "৮", "১৬", "৩২"], a: "গ",
+      x: "n টি ইনপুটে ২<sup>n</sup>টি সারি; ৪ ইনপুটে ২<sup>৪</sup> = ১৬।" },
+    { q: "তিন ইনপুটের AND গেটের সত্যক সারণির কয়টি সারিতে আউটপুট ১?", o: ["১", "৩", "৪", "৭"], a: "ক",
+      x: "AND-এর আউটপুট ১ শুধু সব ইনপুট ১ হলে, অর্থাৎ আটটির মধ্যে কেবল 111 সারিতে।" },
+    { q: "তিন ইনপুটের OR গেটের সত্যক সারণির কয়টি সারিতে আউটপুট ০?", o: ["১", "২", "৪", "৭"], a: "ক",
+      x: "OR-এর আউটপুট ০ শুধু সব ইনপুট ০ হলে, অর্থাৎ কেবল 000 সারিতে; বাকি সাতটিতে ১।" },
+    { q: "তিন ইনপুটের NAND গেটের সত্যক সারণির কয়টি সারিতে আউটপুট ১?", o: ["১", "৩", "৭", "৮"], a: "গ",
+      x: "NAND হলো AND-এর উল্টো; AND-এ একটি সারিতে ১, তাই NAND-এ বাকি সাতটি সারিতে ১।" },
+    { q: "দুই ইনপুটের XOR গেটের সত্যক সারণির কয়টি সারিতে আউটপুট ১?", o: ["১", "২", "৩", "৪"], a: "খ",
+      x: "ইনপুট দুটি ভিন্ন হলে (01 ও 10) আউটপুট ১; একই হলে (00 ও 11) ০।" },
+    { q: "Y = A + <span class=\"ov\">B</span>; A = 0 ও B = 1 হলে Y কত?", o: ["0", "1", "2", "নির্ণয় করা যায় না"], a: "ক",
+      x: "<span class=\"ov\">B</span> = <span class=\"ov\">1</span> = 0, তাই Y = 0 + 0 = 0।" },
+    // প্রশ্ন ১২০–১২৯ · সরলীকরণ (এই সাইটের জন্য লেখা)
+    { q: "Y = A + AB-এর সরল রূপ কোনটি?", o: ["AB", "A", "A + B", "B"], a: "খ",
+      x: "A + AB = A(1 + B) = A·1 = A (শোষণ সূত্র)।" },
+    { q: "Y = A·(<span class=\"ov\">A</span> + B)-এর সরল রূপ কোনটি?", o: ["A", "B", "AB", "0"], a: "গ",
+      x: "গুণ ছড়িয়ে: A<span class=\"ov\">A</span> + AB = 0 + AB = AB।" },
+    { q: "Y = A + <span class=\"ov\">A</span>B-এর সরল রূপ কোনটি?", o: ["AB", "A", "B", "A + B"], a: "ঘ",
+      x: "A + <span class=\"ov\">A</span>B = (A + <span class=\"ov\">A</span>)(A + B) = 1·(A + B) = A + B (বাড়তি পদ বাদের সূত্র)।" },
+    { q: "Y = AB + A<span class=\"ov\">B</span>-এর সরল রূপ কোনটি?", o: ["A", "B", "AB", "1"], a: "ক",
+      x: "AB + A<span class=\"ov\">B</span> = A(B + <span class=\"ov\">B</span>) = A·1 = A।" },
+    { q: "Y = (A + B)(A + <span class=\"ov\">B</span>)-এর সরল রূপ কোনটি?", o: ["B", "A", "A + B", "0"], a: "খ",
+      x: "গুণ ছড়িয়ে: A + A<span class=\"ov\">B</span> + AB + B<span class=\"ov\">B</span> = A + 0 = A; অথবা বিভাজন সূত্রে A + B<span class=\"ov\">B</span> = A।" },
+    { q: "ডি মরগানের সূত্র অনুযায়ী <span class=\"ov\">A</span>·<span class=\"ov\">B</span> কোনটির সমান?", o: ["<span class=\"ov\">A·B</span>", "A + B", "<span class=\"ov\">A + B</span>", "<span class=\"ov\">A</span> + <span class=\"ov\">B</span>"], a: "গ",
+      x: "পূরকগুলোর গুণফল = যোগফলের পূরক: <span class=\"ov\">A</span>·<span class=\"ov\">B</span> = <span class=\"ov\">A + B</span>, অর্থাৎ একটি NOR গেট।" },
+    { q: "Y = AB + BC + <span class=\"ov\">B</span>C-এর সরল রূপ কোনটি?", o: ["AB", "A + C", "B + C", "AB + C"], a: "ঘ",
+      x: "BC + <span class=\"ov\">B</span>C = C(B + <span class=\"ov\">B</span>) = C; তাই Y = AB + C।" },
+    { q: "Y = <span class=\"ov\">A</span>BC + ABC-এর সরল রূপ কোনটি?", o: ["BC", "ABC", "AB", "A + BC"], a: "ক",
+      x: "BC সাধারণ উৎপাদক: BC(<span class=\"ov\">A</span> + A) = BC·1 = BC।" },
+    { q: "Y = A<span class=\"ov\">B</span> + AB + <span class=\"ov\">A</span>B-এর সরল রূপ কোনটি?", o: ["AB", "A + B", "A", "1"], a: "খ",
+      x: "A<span class=\"ov\">B</span> + AB = A(<span class=\"ov\">B</span> + B) = A; তারপর A + <span class=\"ov\">A</span>B = A + B।" },
+    { q: "Y = (A + B)(<span class=\"ov\">A</span> + B)-এর সরল রূপ কোনটি?", o: ["A", "A + B", "B", "1"], a: "গ",
+      x: "বিভাজন সূত্রে (B + A)(B + <span class=\"ov\">A</span>) = B + A<span class=\"ov\">A</span> = B + 0 = B।" }
   ]
 });
