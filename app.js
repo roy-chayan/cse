@@ -243,23 +243,30 @@ function noteAnswers(key, n) {
 
 
 /* ================= NOTE ================= */
-/* Each chapter's note is a template in index.html; this table says which. */
+/* Each chapter's note is notes/<chapter>.js, which puts the note's HTML in window.ICT_NOTES. A note's file loads the
+   first time it opens (the notes are most of the site, so a visit that reads one note fetches only that one). */
 const NOTES = {
-  "computer-basics": { tpl: "t-note-ch01", ch: "ch01" },
-  "number-system": { tpl: "t-note", ch: "ch02" },
-  "data-representation": { tpl: "t-note-ch03", ch: "ch03" },
-  "logic-gates": { tpl: "t-note-ch04", ch: "ch04" },
-  "operating-system": { tpl: "t-note-ch05", ch: "ch05" },
-  "algorithm-flowchart": { tpl: "t-note-ch06", ch: "ch06" },
-  "internet": { tpl: "t-note-ch07", ch: "ch07" }
+  "computer-basics": { ch: "ch01" },
+  "number-system": { ch: "ch02" },
+  "data-representation": { ch: "ch03" },
+  "logic-gates": { ch: "ch04" },
+  "operating-system": { ch: "ch05" },
+  "algorithm-flowchart": { ch: "ch06" },
+  "internet": { ch: "ch07" }
 };
+const noteTpls = new Map();   // the parsed note, kept for the next visit to it
+function mountNote(chId) {
+  if (!noteTpls.has(chId)) { const t = document.createElement("template"); t.innerHTML = window.ICT_NOTES[chId]; noteTpls.set(chId, t); }
+  view.replaceChildren(noteTpls.get(chId).content.cloneNode(true));
+}
 
 function note(id, section) {
   const key = NOTES[id] ? id : "number-system", n = NOTES[key];
   // A chapter can have its note before its MCQs; its name then comes from the chapter list.
   const ch = chapterOf(n.ch) || (window.ICT_CHAPTERS || []).find(c => c.id === n.ch) || { name: "নোট" };
-  mount(n.tpl);
   document.title = `${ch.name} · ICT মাস্টার`;
+  if (!needScript(`notes/${n.ch}.js`, "নোট আনা হচ্ছে…", () => note(id, section))) return;
+  mountNote(n.ch);
 
   // 0–15 in all four forms (number-system note).
   if ($("#g16")) $("#g16").innerHTML = Array.from({ length: 16 }, (_, k) =>
@@ -656,6 +663,21 @@ function loadScript(src) {
   }));
   return scripts.get(src);
 }
+/* For a page that can't draw without its script: true when the script is here. Otherwise it shows a "loading" line,
+   loads the script and draws the page again (redo), unless the reader has moved on by then; if the script can't
+   load, a retry button. */
+function needScript(src, loading, redo) {
+  if (scriptReady(src)) return true;
+  const line = (b, s) => `<p class="wq-wip wait"><i class="bub" aria-hidden="true"></i><span><b>${b}</b>${s}</span></p>`;
+  view.innerHTML = `<div class="wrap">${line(loading, "")}</div>`;
+  const page = view.firstElementChild;
+  loadScript(src).then(() => view.firstElementChild === page && redo(), () => {
+    if (view.firstElementChild !== page) return;
+    page.innerHTML = line("খোলা যায়নি", `ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button>`);
+    $("[data-retry]", page).onclick = route;
+  });
+  return false;
+}
 const answersReady = paper => scriptReady(`answers/paper/${paper}.js`);
 const loadAnswers = paper => loadScript(`answers/paper/${paper}.js`);
 const ansCache = new Map();
@@ -810,16 +832,7 @@ function written(id, section) {
    note where the topic is taught. The chapter bubbles filter the list; the chapter is kept in the address. */
 const THEMES_SRC = "mcq/written-themes.js";
 function repeat(arg) {
-  if (!scriptReady(THEMES_SRC)) {
-    view.innerHTML = `<div class="wrap"><p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>প্রশ্নগুলো সাজানো হচ্ছে…</b></span></p></div>`;
-    const page = view.firstElementChild;
-    loadScript(THEMES_SRC).then(() => view.firstElementChild === page && repeat(arg), () => {
-      if (view.firstElementChild !== page) return;
-      page.innerHTML = `<p class="wq-wip rp-wait"><i class="bub" aria-hidden="true"></i><span><b>খোলা যায়নি</b>ইন্টারনেট সংযোগ দেখে নিন। <button class="btn line sm" type="button" data-retry>আবার চেষ্টা করুন</button></span></p>`;
-      $("[data-retry]", page).onclick = route;
-    });
-    return;
-  }
+  if (!needScript(THEMES_SRC, "প্রশ্নগুলো সাজানো হচ্ছে…", () => repeat(arg))) return;
   const W = D.written, keys = Object.keys(W).sort((a, b) => parseInt(b) - parseInt(a)), exams = keys.map(k => parseInt(k));
   const year = e => bn(W[`${e}-school`].year), { themes } = window.ICT_REPEAT.group(W);
   const chs = allChapters().filter(c => themes.some(t => t.ch === c.id)), ch = chs.find(c => c.id === arg);

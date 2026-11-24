@@ -5,13 +5,14 @@
 //   - every chapter note: each practice set names real MCQs, and every MCQ of the chapter is in some set
 //   - every past written question (mcq/written-prev.js): its paper, question, অথবা and part exist
 //   - every answer link (ans): a note link lands on a real section id; a written link names a real paper
-//   - every #/note/… link in index.html, answers/*.js and mcq/written-themes.js lands on a real section
+//   - every chapter note (notes/chNN.js) loads and sets its HTML
+//   - every #/note/… link in index.html, notes/*.js, answers/*.js and mcq/written-themes.js lands on a real section
 //   - every ask of every written paper falls into a theme of the most-repeated page (mcq/written-themes.js)
 //   - every reused answer part (data-include) names an answer and a part that exist
 //   - answers/index.js and the per-paper bundles in answers/paper/ match the answer files
 import fs from "node:fs";
 import vm from "node:vm";
-import { allAnswers, includeProblems, siteAnswers } from "./answers/lib.mjs";
+import { allAnswers, includeProblems, siteAnswers, noteHtml } from "./answers/lib.mjs";
 
 const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
 const window = {}, ctx = { window };
@@ -38,12 +39,13 @@ for (const ch of chapters) {
 }
 
 // ---- note practice sets ----
-const notes = Object.fromEntries([...app.matchAll(/"([a-z-]+)": \{ tpl: "(t-note[\w-]*)", ch: "(ch\d+)" \}/g)].map(m => [m[1], { tpl: m[2], ch: m[3] }]));
-const template = id => { const a = html.indexOf(`<template id="${id}">`); return a < 0 ? "" : html.slice(a, html.indexOf("</template>", a)); };
+const notes = Object.fromEntries([...app.matchAll(/"([a-z-]+)": \{ ch: "(ch\d+)" \}/g)].map(m => [m[1], { ch: m[2] }]));
+if (!Object.keys(notes).length) say("app.js: can't find the NOTES table");
+const template = ch => { try { return noteHtml(ch); } catch (e) { say(`notes/${ch}.js: ${e.message}`); return ""; } };
 const idsIn = t => new Set([...t.matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
 for (const [key, n] of Object.entries(notes)) {
-  const t = template(n.tpl), ch = chapters.find(c => c.id === n.ch);
-  if (!t) { say(`note ${key}: template ${n.tpl} is missing`); continue; }
+  const t = template(n.ch), ch = chapters.find(c => c.id === n.ch);
+  if (!t) { say(`note ${key}: notes/${n.ch}.js is missing or empty`); continue; }
   if (!ch) continue;
   const inSets = new Set();
   for (const [, set] of t.matchAll(/data-practice="([^"]+)"/g))
@@ -58,7 +60,7 @@ for (const [key, n] of Object.entries(notes)) {
 // ---- past written questions and their links ----
 const W = window.KHATA_DEMO.written, P = window.ICT_PREV;
 const alts = q => q.alts || (q.alt ? [q.alt] : []);
-const noteIds = Object.fromEntries(Object.entries(notes).map(([k, n]) => [k, idsIn(template(n.tpl))]));
+const noteIds = Object.fromEntries(Object.entries(notes).map(([k, n]) => [k, idsIn(template(n.ch))]));
 for (const x of P.items) {
   const where = `written-prev ${x.c} ${x.e}তম${x.n ? ` প্রশ্ন ${x.n}` : ""}${x.o ? ` অথবা ${x.o}` : ""}${x.l ? ` ${x.l}` : ""}`;
   if (!P.exams.some(e => e.no === x.e)) say(`${where}: exam ${x.e} is not in the exam list`);
@@ -80,7 +82,7 @@ for (const x of P.items) {
 }
 
 // ---- every note link anywhere: notes, answer templates and answer files ----
-const linkSources = [["index.html", html], ["mcq/written-themes.js", read("mcq/written-themes.js")], ...fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => f.endsWith(".js")).map(f => ["answers/" + f, read("answers/" + f)])];
+const linkSources = [["index.html", html], ["mcq/written-themes.js", read("mcq/written-themes.js")], ...Object.values(notes).map(n => [`notes/${n.ch}.js`, template(n.ch)]), ...fs.readdirSync(new URL("../answers/", import.meta.url)).filter(f => f.endsWith(".js")).map(f => ["answers/" + f, read("answers/" + f)])];
 for (const [file, text] of linkSources)
   for (const m of text.matchAll(/#\/note\/([a-z-]+)\/([\w-]+)/g)) {
     if (!noteIds[m[1]]) say(`${file}: link to unknown note "${m[1]}"`);

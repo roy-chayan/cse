@@ -1,6 +1,6 @@
 // Shared helpers for the build-<no>-school.mjs scripts, which write answers/<no>-school.js (model answers for one
 // older written paper). Each script:
-//   - lifts worked blocks from the chapter notes in index.html (fromH4 / fromH3), so a calculation lives in one place
+//   - lifts worked blocks from the chapter notes in notes/chNN.js (fromH4 / fromH3), so a calculation lives in one place
 //   - reuses earlier answers to the same question with data-include (fillIncludes in app.js); see tools/answer-index.mjs
 //   - writes the rest itself
 import fs from "node:fs";
@@ -17,10 +17,26 @@ const FIXES = [[">অংশ ২-এ</a>", ">অধ্যায় ২-এর ন
   ["(অংশ ৭.৬-এর মতো)", '(যেমন <a href="#/note/algorithm-flowchart/p-minN">N টি সংখ্যার মধ্যে ছোট</a> নির্ণয়ে)'],
   ["অ্যালগরিদম ও ফ্লোচার্ট আছে অংশ ৭-এ।", 'অ্যালগরিদম ও ফ্লোচার্ট আছে <a href="#/note/algorithm-flowchart/p-sum">অধ্যায় ৬-এর নোটে</a>।']];
 
+// A chapter note's HTML, from notes/chNN.js. The build scripts still name a note by the id of the <template> it used
+// to be in index.html: "t-note" is chapter ২, "t-note-ch04" chapter ৪; "ch04" works too.
+export const NOTE_KEYS = { ch01: "computer-basics", ch02: "number-system", ch03: "data-representation", ch04: "logic-gates",
+  ch05: "operating-system", ch06: "algorithm-flowchart", ch07: "internet" };
+const noteCache = new Map();
+export function noteHtml(name) {
+  const ch = name === "t-note" ? "ch02" : name.replace(/^t-note-/, "");
+  ok(NOTE_KEYS[ch], `no note called ${name}`);
+  if (!noteCache.has(ch)) {
+    const ctx = { window: {} };
+    vm.runInNewContext(read(`notes/${ch}.js`), ctx);
+    const h = (ctx.window.ICT_NOTES || {})[ch]; ok(typeof h === "string", `notes/${ch}.js sets ICT_NOTES.${ch}`);
+    noteCache.set(ch, h);
+  }
+  return noteCache.get(ch);
+}
+
 // suffix: added to every id lifted from a note (and to url(#…) references), so nothing clashes on the paper page.
 export function notes(suffix) {
-  const html = read("index.html");
-  const template = id => { const a = html.indexOf(`<template id="${id}">`); ok(a >= 0, id); return html.slice(a, html.indexOf("</template>", a)); };
+  const template = noteHtml;
   // A worked block: everything after a heading up to the next h4/h3, or to the section's past-question list if that comes
   // first (the heading itself is dropped; the answer gives its own).
   const cut = (t, start) => {
@@ -56,7 +72,7 @@ export function notes(suffix) {
     balanced(s, what);
     return "    " + suffixIds(s, suffix);
   };
-  return { html, template, fromH4, fromH3, fromSection, fromAnswer };
+  return { template, fromH4, fromH3, fromSection, fromAnswer };
 }
 
 const balanced = (s, what) => {

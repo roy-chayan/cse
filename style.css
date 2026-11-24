@@ -271,7 +271,7 @@ kbd{font-family:var(--mono);font-size:12px;color:var(--ink-3);border:1px solid v
 .rp-row small{font-family:var(--mono);font-size:10.5px;line-height:1;color:var(--ink-3)}
 .rp-q{margin-top:10px}
 .rp-note{display:inline-block;margin-top:12px;font-size:14.5px;color:var(--form-ink)}
-.rp-wait{margin:48px 0}
+.wait{margin:48px 0}
 @media (max-width:560px){
   .rp{grid-template-columns:30px minmax(0,1fr);gap:0 10px}
   .rp-no{font-size:22px}

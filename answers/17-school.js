@@ -1,5 +1,5 @@
 /* Model answers · ১৭তম শিক্ষক নিবন্ধন (২০২৩), সহকারী শিক্ষক (তথ্য ও যোগাযোগ প্রযুক্তি), বিষয় কোড ৩১৩.
-   One entry per question: the answer HTML, built the same way as the ১৮তম answers in index.html
+   One entry per question: the answer HTML, built the same way as the ১৮তম answers (answers/18-school.js)
    (.ans-body with .part sections, then an optional aside.side). "অথবা" answers follow a <p class="ans-or">.
    <div data-include="wa-18-school-2"></div> pulls in an earlier answer to the same question (data-part = one part only;
    data-inner = without that part's heading). Every calculation here was checked by script. */
